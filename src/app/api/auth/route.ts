@@ -29,6 +29,8 @@ const DEMO_ACCOUNTS = [
   },
 ];
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -51,22 +53,24 @@ export async function POST(req: Request) {
       );
 
       if (demoMatch) {
-        // Ensure demo user is persisted in SQLite if database is reachable
-        try {
-          await prisma.user.upsert({
-            where: { identifier: demoMatch.identifier },
-            update: {},
-            create: {
-              id: demoMatch.id,
-              fullName: demoMatch.fullName,
-              identifier: demoMatch.identifier,
-              password: demoMatch.password,
-              role: demoMatch.role,
-              region: demoMatch.region,
-            },
-          });
-        } catch {
-          // Graceful fallback if SQLite is busy
+        // Ensure demo user is persisted in database if reachable
+        if (prisma) {
+          try {
+            await prisma.user.upsert({
+              where: { identifier: demoMatch.identifier },
+              update: {},
+              create: {
+                id: demoMatch.id,
+                fullName: demoMatch.fullName,
+                identifier: demoMatch.identifier,
+                password: demoMatch.password,
+                role: demoMatch.role,
+                region: demoMatch.region,
+              },
+            });
+          } catch {
+            // Graceful fallback if DB is busy or migrating
+          }
         }
 
         return NextResponse.json({
@@ -81,36 +85,42 @@ export async function POST(req: Request) {
         });
       }
 
-      // Check SQLite database
-      try {
-        const user = await prisma.user.findUnique({
-          where: { identifier: identifier.trim().toLowerCase() },
-        });
+      // Check database
+      if (prisma) {
+        try {
+          const user = await prisma.user.findUnique({
+            where: { identifier: identifier.trim().toLowerCase() },
+          });
 
-        if (!user || user.password !== password) {
-          return NextResponse.json(
-            { success: false, error: 'Invalid identifier or password. Please try again.' },
-            { status: 401 }
-          );
+          if (user) {
+            if (user.password !== password) {
+              return NextResponse.json(
+                { success: false, error: 'Invalid identifier or password. Please try again.' },
+                { status: 401 }
+              );
+            }
+
+            return NextResponse.json({
+              success: true,
+              user: {
+                id: user.id,
+                fullName: user.fullName,
+                identifier: user.identifier,
+                role: user.role,
+                region: user.region,
+              },
+            });
+          }
+        } catch (dbErr) {
+          console.warn('Database query warning:', dbErr);
         }
-
-        return NextResponse.json({
-          success: true,
-          user: {
-            id: user.id,
-            fullName: user.fullName,
-            identifier: user.identifier,
-            role: user.role,
-            region: user.region,
-          },
-        });
-      } catch (dbErr) {
-        console.error('Database query error:', dbErr);
-        return NextResponse.json(
-          { success: false, error: 'Database connection issue. Please try demo accounts.' },
-          { status: 500 }
-        );
       }
+
+      // If user not found in demo or database
+      return NextResponse.json(
+        { success: false, error: 'Invalid identifier or password. Please check credentials or use demo accounts.' },
+        { status: 401 }
+      );
     }
 
     // 2. SIGN UP
@@ -138,46 +148,55 @@ export async function POST(req: Request) {
       const userRole = role === 'DOCTOR' ? 'DOCTOR' : 'CAREGIVER';
       const userRegion = region?.trim() || 'Assam, North Eastern Region';
 
-      try {
-        // Check if identifier already exists
-        const existing = await prisma.user.findUnique({
-          where: { identifier: cleanIdentifier },
-        });
+      if (prisma) {
+        try {
+          const existing = await prisma.user.findUnique({
+            where: { identifier: cleanIdentifier },
+          });
 
-        if (existing) {
-          return NextResponse.json(
-            { success: false, error: 'An account with this phone/email already exists.' },
-            { status: 409 }
-          );
+          if (existing) {
+            return NextResponse.json(
+              { success: false, error: 'An account with this phone/email already exists.' },
+              { status: 409 }
+            );
+          }
+
+          const newUser = await prisma.user.create({
+            data: {
+              fullName: fullName.trim(),
+              identifier: cleanIdentifier,
+              password,
+              role: userRole,
+              region: userRegion,
+            },
+          });
+
+          return NextResponse.json({
+            success: true,
+            user: {
+              id: newUser.id,
+              fullName: newUser.fullName,
+              identifier: newUser.identifier,
+              role: newUser.role,
+              region: newUser.region,
+            },
+          });
+        } catch (err: unknown) {
+          console.warn('Signup database error, falling back to local session:', err);
         }
-
-        const newUser = await prisma.user.create({
-          data: {
-            fullName: fullName.trim(),
-            identifier: cleanIdentifier,
-            password,
-            role: userRole,
-            region: userRegion,
-          },
-        });
-
-        return NextResponse.json({
-          success: true,
-          user: {
-            id: newUser.id,
-            fullName: newUser.fullName,
-            identifier: newUser.identifier,
-            role: newUser.role,
-            region: newUser.region,
-          },
-        });
-      } catch (err: unknown) {
-        console.error('Signup error:', err);
-        return NextResponse.json(
-          { success: false, error: 'Failed to create user. Please try again.' },
-          { status: 500 }
-        );
       }
+
+      // Fallback if DB is not configured
+      return NextResponse.json({
+        success: true,
+        user: {
+          id: `usr-${Date.now()}`,
+          fullName: fullName.trim(),
+          identifier: cleanIdentifier,
+          role: userRole,
+          region: userRegion,
+        },
+      });
     }
 
     return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });

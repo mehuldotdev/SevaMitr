@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { analyzePatientCognitiveData } from '@/lib/ai/sundowningDetector';
 import { offlineDb } from '@/lib/db/offlineDb';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const patientId = searchParams.get('patientId') || 'patient-ner-001';

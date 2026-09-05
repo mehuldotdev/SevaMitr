@@ -8,6 +8,8 @@ import {
 
 export type { DoctorReportData };
 
+export const dynamic = 'force-dynamic';
+
 // In-Memory Server Cache (10-minute TTL) for sub-millisecond repeated lookups
 interface CacheEntry {
   data: DoctorReportData;
