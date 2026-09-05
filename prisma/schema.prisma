@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String   @id @default(uuid())
+  fullName   String
+  identifier String   @unique // Phone or Email
+  password   String
+  role       String   @default("PATIENT") // "PATIENT", "CAREGIVER", "DOCTOR"
+  region     String   @default("Kamrup Rural, Assam")
+  createdAt  DateTime @default(now())
+}
+
+model Patient {
+  id               String             @id @default(uuid())
+  fullName         String
+  age              Int
+  gender           String
+  region           String             // e.g., "Kamrup Rural, Assam"
+  primaryLanguage  String             @default("en") // "as", "bn", "hi", "en"
+  dementiaStage    String             @default("Mild") // "MCI", "Mild", "Moderate"
+  emergencyContact String
+  caregiverId      String
+  caregiver        Caregiver          @relation(fields: [caregiverId], references: [id])
+  sessions         CognitiveSession[]
+  dailyMetrics     DailyMetric[]
+  reminders        Reminder[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@index([caregiverId])
+}
+
+model Caregiver {
+  id        String    @id @default(uuid())
+  name      String
+  role      String    // "Family Caregiver", "ASHA Worker", "Doctor"
+  phone     String
+  email     String?
+  patients  Patient[]
+  createdAt DateTime  @default(now())
+}
+
+model CognitiveSession {
+  id              String   @id @default(uuid())
+  patientId       String
+  patient         Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  gameId          String   // "smriti_setu", "doharani", "rang_tanti", "shabda_tarang", "bazaar_saathi"
+  gameTitle       String
+  difficultyLevel Int      @default(1) // 1 - 5
+  score           Float
+  durationSec     Int
+  hesitationMs    Float
+  errorCount      Int
+  confusionLoops  Int      @default(0)
+  completed       Boolean  @default(true)
+  timeOfDay       String   // "morning", "afternoon", "evening", "night"
+  clientSyncedAt  DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  @@index([patientId, gameId])
+  @@index([timeOfDay])
+}
+
+model DailyMetric {
+  id              String   @id @default(uuid())
+  patientId       String
+  patient         Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  date            DateTime @default(now())
+  overallDci      Float    // Dynamic Cognitive Index
+  memoryScore     Float
+  attentionScore  Float
+  executiveScore  Float
+  auditoryScore   Float
+  mathScore       Float
+  sundowningFlag  Boolean  @default(false)
+  motorTremorFlag Boolean  @default(false)
+
+  @@index([patientId, date])
+}
+
+model Reminder {
+  id            String   @id @default(uuid())
+  patientId     String
+  patient       Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  type          String   // "medicine", "hydration", "routine", "appointment"
+  title         String
+  titleAssamese String?
+  titleBengali  String?
+  timeSlot      String   // e.g. "08:30 AM"
+  completed     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  @@index([patientId])
+}
+
+model SyncLog {
+  id               String   @id @default(uuid())
+  patientId        String
+  recordsCount     Int
+  payloadSizeBytes Int
+  ipAddress        String?
+  syncedAt         DateTime @default(now())
+}

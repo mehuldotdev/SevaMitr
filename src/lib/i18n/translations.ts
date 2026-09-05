@@ -1,0 +1,483 @@
+export type SupportedLanguage = 'en' | 'as' | 'bn' | 'hi';
+
+export const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
+  en: {
+    // Navbar
+    homeTitle: 'SevaMitr',
+    elderlyPatient: 'Elderly Patient',
+    caregiverDashboard: 'Caregiver Dashboard',
+    callCaregiver: 'Call Caregiver (Emergency)',
+
+    // Home Page
+    homeSubtitle: 'Cognitive games and memory assistance for elderly loved ones in North East India.',
+    playGamesBtn: 'Play Games',
+    caregiverLink: 'Caregiver & Doctor Dashboard →',
+    homeVoiceIntro: 'Welcome to SevaMitr. Tap the green Play Games button in the center to start playing.',
+
+    // Patient Portal
+    welcomeGreeting: 'Welcome,',
+    patientSubtitle: 'Choose any game below to start playing — everything fits on this single screen.',
+    listen: 'Listen',
+    play: 'Play',
+    patientVoiceIntro: 'Welcome. Please choose any game on this screen to start playing.',
+
+    // 5 Game Hub Titles
+    smritiSetuTitle: 'Memory Bridge',
+    smritiSetuSub: 'Card Matching',
+    doharaniTitle: 'Sequence Recall',
+    doharaniSub: 'Daily Sequence',
+    rangTantiTitle: 'Pattern Focus',
+    rangTantiSub: 'Weave Matching',
+    shabdaTarangTitle: 'Sound Memory',
+    shabdaTarangSub: 'Listen & Match',
+    bazaarSaathiTitle: 'Market Math',
+    bazaarSaathiSub: 'Village Shopping',
+    doubleDecisionTitle: 'Visual Speed (UFOV)',
+    doubleDecisionSub: 'Double Decision',
+    soundSweepsTitle: 'Sound Sweeps',
+    soundSweepsSub: 'Acoustic Speed',
+    targetTrackerTitle: 'Target Tracker',
+    targetTrackerSub: 'Divided Attention',
+    brainHqSuiteTitle: 'BrainHQ Neuro-Exercises',
+    culturalGamesTitle: 'Cultural Heritage Games',
+
+    // Patient Bottom Bar
+    routineChecklist: "Today's Checklist",
+    callCaregiverName: 'Call Caregiver (Anuradha)',
+
+    // Common Controls
+    back: 'Back',
+    restart: 'Restart',
+    shuffle: 'Shuffle',
+    matched: 'Matched',
+    round: 'Round',
+    level: 'Level',
+    checkOrder: 'Check My Order',
+    finishShopping: 'Finish Shopping',
+    wonderfulJob: 'Wonderful Job!',
+    playAgain: 'Play Again',
+    returnHome: 'Return to Home',
+    activity: 'Activity',
+    score: 'Score',
+
+    // Game 1: Smriti Setu
+    smritiGameTitle: 'Memory Bridge: Match Pairs',
+    smritiGameDesc: 'Touch cards to turn over and find the twin.',
+    smritiVoice: 'Touch any card to turn it over, then find its matching twin.',
+    tapToFlip: 'Tap to Flip',
+    item_japi: 'Assam Japi',
+    item_gamosa: 'Red Gamosa',
+    item_rhino: 'One-Horned Rhino',
+    item_tea: 'Assam Tea',
+    item_hornbill: 'Great Hornbill',
+    item_flute: 'Bihu Flute',
+
+    // Game 2: Doharani
+    doharaniGameTitle: 'Sequence Recall: Arrange in Order',
+    doharaniGameDesc: 'Use arrows to arrange events from morning to night.',
+    doharaniVoice: 'Arrange the activities from morning to evening using the up and down arrow buttons, then tap Check My Order.',
+    step_tea: 'Morning Warm Tea & Biscuit',
+    step_med: 'Morning Health Medicine',
+    step_plants: 'Watering Courtyard Plants',
+    step_lamp: 'Evening Quiet Prayer & Lamp',
+
+    // Game 3: Rang & Tanti
+    rangGameTitle: 'Pattern Focus: Match Weave',
+    rangGameDesc: 'Look at the target below and tap the matching design.',
+    rangVoice: 'Look at the target pattern at the top, then touch the matching weave below.',
+    targetToMatch: 'TARGET TO MATCH',
+    pattern_muga: 'Muga Gold Floral',
+    pattern_gamosa: 'Red Gamosa Border',
+    pattern_naga: 'Naga Geometric Shawl',
+    pattern_manipuri: 'Manipuri Temple Motif',
+    pattern_bodo: 'Bodo Weave Pattern',
+
+    // Game 4: Shabda Tarang
+    shabdaGameTitle: 'Sound Memory: Listen & Match',
+    shabdaGameDesc: 'Tap the speaker to replay sound, then choose the picture.',
+    shabdaVoice: 'Tap the big blue card to listen to the sound, then choose the matching picture below.',
+    playAudio: 'Tap to Play Sound',
+    playingAudio: 'Playing Sound...',
+    replayHint: 'Replay as many times as you like',
+    sound_rain: 'Monsoon Rain',
+    sound_rain_desc: 'Gentle raindrops on roof',
+    sound_flute: 'Bamboo Flute',
+    sound_flute_desc: 'Traditional folk melody',
+    sound_bell: 'Temple Bell',
+    sound_bell_desc: 'Calm prayer resonance',
+    sound_birds: 'Morning Birds',
+    sound_birds_desc: 'Early forest bird calls',
+
+    // Game 5: Bazaar Saathi
+    bazaarGameTitle: 'Market Math: Fill the Basket',
+    bazaarGameDesc: 'Add items according to the grocery list below.',
+    bazaarVoice: 'Put 1 bamboo shoot, 2 fresh gingers, and 1 orange into your basket, then tap Finish Shopping.',
+    shoppingListLabel: 'SHOPPING LIST:',
+    bambooName: 'Bamboo Shoots',
+    gingerName: 'Fresh Ginger',
+    orangeName: 'Hill Oranges',
+    basketValue: 'Basket Value',
+    totalText: 'Total',
+    eachText: 'each',
+  },
+
+  as: {
+    // Navbar
+    homeTitle: 'সেৱামিত্ৰ',
+    elderlyPatient: 'বয়োবৃদ্ধ ৰোগী',
+    caregiverDashboard: 'তত্ত্বাৱধায়ক ডেশ্ববৰ্ড',
+    callCaregiver: 'তত্ত্বাৱধায়কক ফোন কৰক',
+
+    // Home Page
+    homeSubtitle: 'উত্তৰ-পূৰ্বাঞ্চলৰ বয়োবৃদ্ধসকলৰ বাবে স্মৃতি আৰু মানসিক সুস্থতাৰ সহজ ডিজিটেল মঞ্চ।',
+    playGamesBtn: 'খেল আৰম্ভ কৰক',
+    caregiverLink: 'তত্ত্বাৱধায়ক আৰু চিকিৎসক ডেশ্ববৰ্ড →',
+    homeVoiceIntro: 'সেৱামিত্ৰলৈ স্বাগতম। খেলিবৰ বাবে মাজৰ সেউজীয়া খেল আৰম্ভ কৰক বুটামত টিপক।',
+
+    // Patient Portal
+    welcomeGreeting: 'নমস্কাৰ,',
+    patientSubtitle: 'খেলিবলৈ তলৰ যিকোনো খেল বাচি লওক — সকলো এটা পৃষ্ঠাতে আছে।',
+    listen: 'শুনক',
+    play: 'খেলক',
+    patientVoiceIntro: 'নমস্কাৰ। খেলিবৰ বাবে স্ক্ৰিনত থকা যিকোনো এটা খেল বাচি লওক।',
+
+    // 5 Game Hub Titles
+    smritiSetuTitle: 'স্মৃতি সেতু',
+    smritiSetuSub: 'কাৰ্ড মিলাওক',
+    doharaniTitle: 'দোহৰণী',
+    doharaniSub: 'দৈনন্দিন কামৰ ক্ৰম',
+    rangTantiTitle: 'ৰং আৰু তাঁতী',
+    rangTantiSub: 'সাঁচ চিনাক্তকৰণ',
+    shabdaTarangTitle: 'শব্দ তৰংগ',
+    shabdaTarangSub: 'শব্দ শুনি চিনক',
+    bazaarSaathiTitle: 'বজাৰ সাৰথি',
+    bazaarSaathiSub: 'গাঁওৰ বজাৰৰ হিচাপ',
+    doubleDecisionTitle: 'দৃষ্টি গতি (UFOV)',
+    doubleDecisionSub: 'দ্বি-সিদ্ধান্ত খেল',
+    soundSweepsTitle: 'শব্দ তৰংগ গতি',
+    soundSweepsSub: 'ধ্বনি চিনাক্তকৰণ',
+    targetTrackerTitle: 'লক্ষ্য অনুসৰণ',
+    targetTrackerSub: 'মনোযোগ পৰীক্ষা',
+    brainHqSuiteTitle: 'ব্ৰেইন-এইচ-কিউ স্নায়ু পৰীক্ষা',
+    culturalGamesTitle: 'ঐতিহ্যপূৰ্ণ খেলসমূহ',
+
+    // Patient Bottom Bar
+    routineChecklist: 'দৈনন্দিন কামৰ সূচী',
+    callCaregiverName: 'সহায় আহ্বান: অনুৰাধা',
+
+    // Common Controls
+    back: 'উভতি যাওক',
+    restart: 'নতুনকৈ আৰম্ভ কৰক',
+    shuffle: 'পুনৰ সজাওক',
+    matched: 'মিলিল',
+    round: 'পৰ্যায়',
+    level: 'স্তৰ',
+    checkOrder: 'ক্ৰম পৰীক্ষা কৰক',
+    finishShopping: 'বজাৰ সম্পূৰ্ণ কৰক',
+    wonderfulJob: 'বৰ সুন্দৰ কাম!',
+    playAgain: 'পুনৰ খেলক',
+    returnHome: 'মুখ্য পৃষ্ঠালৈ উভতি যাওক',
+    activity: 'কাৰ্য্যকলাপ',
+    score: 'নম্বৰ',
+
+    // Game 1: Smriti Setu
+    smritiGameTitle: 'স্মৃতি সেতু: কাৰ্ডৰ যোৰ মিলাওক',
+    smritiGameDesc: 'কাৰ্ডত স্পৰ্শ কৰি একেই ছবিৰ যোৰ বিচাৰি উলিয়াওক।',
+    smritiVoice: 'কাৰ্ডসমূহত আঙুলি দি একেই ছবি বিচাৰি উলিয়াওক। যেনে জাপিৰ লগত জাপি বা গামোচাৰ লগত গামোচা।',
+    tapToFlip: 'কাৰ্ড লুটিয়াক',
+    item_japi: 'অসমীয়া জাপি',
+    item_gamosa: 'ৰঙা গামোচা',
+    item_rhino: 'এশিঙীয়া গঁড়',
+    item_tea: 'চাহ পাত',
+    item_hornbill: 'ধনেশ পক্ষী',
+    item_flute: 'বিহুৰ পেঁপা',
+
+    // Game 2: Doharani
+    doharaniGameTitle: 'দোহৰণী: দৈনন্দিন কামৰ ক্ৰম',
+    doharaniGameDesc: 'পুৱাৰ পৰা সন্ধিয়ালৈকে কামবোৰ শুদ্ধ ক্ৰমত সজাওক।',
+    doharaniVoice: 'পুৱাৰ পৰা সন্ধিয়ালৈ আপুনি কৰা কামবোৰ কাঁড় চিন ব্যৱহাৰ কৰি শুদ্ধ ক্ৰমত সজাওক।',
+    step_tea: 'পুৱাৰ গৰম চাহ আৰু বিস্কুট',
+    step_med: 'পুৱাৰ প্ৰেছাৰ আৰু স্বাস্থ্যৰ ঔষধ',
+    step_plants: 'চোতালৰ তুলসী গছত পানী দিয়া',
+    step_lamp: 'সন্ধিয়া গোসাঁই ঘৰত চাকি জ্বলোৱা',
+
+    // Game 3: Rang & Tanti
+    rangGameTitle: 'ৰং আৰু তাঁতী: সাঁচ চিনাক্তকৰণ',
+    rangGameDesc: 'ওপৰৰ মূল সাঁচটো চাই তলৰ বিকল্পৰ পৰা একেই সাঁচটো স্পৰ্শ কৰক।',
+    rangVoice: 'ওপৰৰ সাঁচটো ভালদৰে চাওক, আৰু তলৰ পৰা একেই সাঁচটো বাচি লওক।',
+    targetToMatch: 'মিলাবলগীয়া সাঁচ',
+    pattern_muga: 'সোণালী মুগাৰ ফুল',
+    pattern_gamosa: 'গামোচাৰ ৰঙা বুটা',
+    pattern_naga: 'নাগা শালৰ চানেকি',
+    pattern_manipuri: 'মণিপুৰী ময়ৰাং ফী',
+    pattern_bodo: 'বড়ো আৰনাই সাঁচ',
+
+    // Game 4: Shabda Tarang
+    shabdaGameTitle: 'শব্দ তৰংগ: শুনক আৰু ছবি মিলাওক',
+    shabdaGameDesc: 'বুটামত স্পৰ্শ কৰি শব্দ শুনক, তাৰ পিছত সঠিক ছবিখন বাচক।',
+    shabdaVoice: 'ডাঙৰ বুটামত আঙুলি দি শব্দটো শুনক, তাৰ পিছত সঠিক ছবিখন বাচি লওক।',
+    playAudio: 'শব্দটো শুনক',
+    playingAudio: 'শব্দ বাজি আছে...',
+    replayHint: 'যিমানে ইচ্ছা সিমানে বাৰে বাৰে শুনিব পাৰে',
+    sound_rain: 'টিনৰ চালত বৰষুণ',
+    sound_rain_desc: 'ঘৰৰ চালত বৰষুণৰ টোপাল',
+    sound_flute: 'বাঁহৰ বাঁহী আৰু পেঁপা',
+    sound_flute_desc: 'বিহুৰ সুৰীয়া ধ্বনি',
+    sound_bell: 'নামঘৰৰ কাঁহ আৰু ঘণ্টা',
+    sound_bell_desc: 'সন্ধিয়া প্ৰাৰ্থনাৰ ঘণ্টা',
+    sound_birds: 'পুৱাৰ বনৰীয়া চৰাই',
+    sound_birds_desc: 'গছৰ ডালত চৰাইৰ মাত',
+
+    // Game 5: Bazaar Saathi
+    bazaarGameTitle: 'বজাৰ সাৰথি: বজাৰৰ খৰচ আৰু হিচাপ',
+    bazaarGameDesc: 'বজাৰৰ ফৰ্দ অনুসৰি ডালাত বস্তু ভৰাওক।',
+    bazaarVoice: '১টা বাঁহৰ গাজ, ২টা আদা আৰু ১টা কমলা ডালাত ভৰাওক আৰু বজাৰ সম্পূৰ্ণ কৰক।',
+    shoppingListLabel: 'বজাৰৰ ফৰ্দ:',
+    bambooName: 'বাঁহৰ গাজ',
+    gingerName: 'কেঁচা আদা',
+    orangeName: 'মিঠা কমলা',
+    basketValue: 'ডালাৰ মূল্য',
+    totalText: 'মুঠ',
+    eachText: 'প্ৰতিটো',
+  },
+
+  bn: {
+    // Navbar
+    homeTitle: 'সেবামিত্র',
+    elderlyPatient: 'বয়োবৃদ্ধ রোগী',
+    caregiverDashboard: 'তত্ত্বাবধায়ক ড্যাশবোর্ড',
+    callCaregiver: 'তত্ত্বাবধায়ককে কল করুন',
+
+    // Home Page
+    homeSubtitle: 'উত্তর-পূর্ব ভারতের প্রবীণদের স্মৃতি ও মানসিক সুস্থতার সহজ প্ল্যাটফর্ম।',
+    playGamesBtn: 'খেলা শুরু করুন',
+    caregiverLink: 'তত্ত্বাবধায়ক ও চিকিৎসক ড্যাশবোর্ড →',
+    homeVoiceIntro: 'সেবামিত্রে স্বাগতম। খেলা শুরু করতে মাঝের সবুজ বাটনে চাপ দিন।',
+
+    // Patient Portal
+    welcomeGreeting: 'নমস্কার,',
+    patientSubtitle: 'খেলতে নিচের যেকোনো খেলা বেছে নিন — সবকিছু এক পৃষ্ঠায় আছে।',
+    listen: 'শুনুন',
+    play: 'খেলুন',
+    patientVoiceIntro: 'নমস্কার। খেলতে স্ক্রিনে থাকা যেকোনো একটি খেলা বেছে নিন।',
+
+    // 5 Game Hub Titles
+    smritiSetuTitle: 'স্মৃতি সেতু',
+    smritiSetuSub: 'কার্ড ম্যাচিং',
+    doharaniTitle: 'দৈনন্দিন রুটিন',
+    doharaniSub: 'ক্রম সাজানো',
+    rangTantiTitle: 'রং ও তাঁত',
+    rangTantiSub: 'নকশা মেলানো',
+    shabdaTarangTitle: 'শব্দ তরঙ্গ',
+    shabdaTarangSub: 'শব্দ শুনে চেনা',
+    bazaarSaathiTitle: 'বাজার সারথি',
+    bazaarSaathiSub: 'গ্রাম্য বাজার হিসাব',
+    doubleDecisionTitle: 'দৃষ্টি গতি (UFOV)',
+    doubleDecisionSub: 'দ্বি-সিদ্ধান্ত খেলা',
+    soundSweepsTitle: 'শব্দ তরঙ্গ গতি',
+    soundSweepsSub: 'শব্দ গতি পর্যবেক্ষণ',
+    targetTrackerTitle: 'লক্ষ্য ট্র্যাকার',
+    targetTrackerSub: 'বিভক্ত মনোযোগ',
+    brainHqSuiteTitle: 'ব্রেন-এইচ-কিউ নিউরো টেস্ট',
+    culturalGamesTitle: 'সাংস্কৃতিক খেলা',
+
+    // Patient Bottom Bar
+    routineChecklist: 'আজকের রুটিন তালিকা',
+    callCaregiverName: 'সাহায্য কল: অনুরাধা',
+
+    // Common Controls
+    back: 'ফিরে যান',
+    restart: 'আবার শুরু করুন',
+    shuffle: 'পুনরায় সাজান',
+    matched: 'মিলেছে',
+    round: 'রাউন্ড',
+    level: 'স্তর',
+    checkOrder: 'ক্রম পরীক্ষা করুন',
+    finishShopping: 'বাজার শেষ করুন',
+    wonderfulJob: 'দারুণ কাজ!',
+    playAgain: 'আবার খেলুন',
+    returnHome: 'মূল পৃষ্ঠায় ফিরুন',
+    activity: 'কার্যকলাপ',
+    score: 'স্কোর',
+
+    // Game 1: Smriti Setu
+    smritiGameTitle: 'স্মৃতি সেতু: কার্ডের জোড়া মেলান',
+    smritiGameDesc: 'কার্ডে স্পর্শ করে একই জোড়া ছবি খুঁজে নিন।',
+    smritiVoice: 'কার্ডে আঙুল দিয়ে একই ছবির জোড়া খুঁজে বের করুন।',
+    tapToFlip: 'উল্টাতে চাপুন',
+    item_japi: 'আসামের জাপি',
+    item_gamosa: 'লাল গামোচা',
+    item_rhino: 'একশৃঙ্গ গণ্ডার',
+    item_tea: 'চা পাতা',
+    item_hornbill: 'ধনেশ পাখি',
+    item_flute: 'লোক বাঁশি',
+
+    // Game 2: Doharani
+    doharaniGameTitle: 'দৈনন্দিন রুটিন: সময় অনুযায়ী সাজান',
+    doharaniGameDesc: 'সকাল থেকে রাতের কাজগুলো সঠিক ক্রমানুসারে সাজান।',
+    doharaniVoice: 'তীর চিহ্ন ব্যবহার করে সকাল থেকে রাতের কাজগুলো ক্রমানুসারে সাজান।',
+    step_tea: 'সকালের গরম চা ও বিস্কুট',
+    step_med: 'সকালের প্রেসারের ওষুধ',
+    step_plants: 'উঠোনের গাছে জল দেওয়া',
+    step_lamp: 'সন্ধ্যায় প্রদীপ জ্বালানো ও প্রার্থনা',
+
+    // Game 3: Rang & Tanti
+    rangGameTitle: 'রং ও তাঁত: নকশা চিহ্নিতকরণ',
+    rangGameDesc: 'উপরের নকশাটি দেখে নিচের বিকল্পগুলো থেকে একই নকশা স্পর্শ করুন।',
+    rangVoice: 'উপরের নকশাটি দেখে নিচের বিকল্প থেকে একই নকশা বেছে নিন।',
+    targetToMatch: 'মেলানোর নকশা',
+    pattern_muga: 'মুগা সোনালী নকশা',
+    pattern_gamosa: 'গামোচার লাল পাড়',
+    pattern_naga: 'নাগা চাদরের নকশা',
+    pattern_manipuri: 'মণিপুরী মন্দির নকশা',
+    pattern_bodo: 'বড়ো আরনাই নকশা',
+
+    // Game 4: Shabda Tarang
+    shabdaGameTitle: 'শব্দ তরঙ্গ: শুনুন ও ছবি মেলান',
+    shabdaGameDesc: 'বাটনে চাপ দিয়ে শব্দ শুনুন, তারপর সঠিক ছবি বেছে নিন।',
+    shabdaVoice: 'বড় বাটনে চাপ দিয়ে শব্দ শুনুন, তারপর সঠিক ছবিটি বেছে নিন।',
+    playAudio: 'শব্দটি শুনুন',
+    playingAudio: 'শব্দ বাজছে...',
+    replayHint: 'যতবার খুশি পুনরায় শুনতে পারেন',
+    sound_rain: 'টিনের চালে বৃষ্টি',
+    sound_rain_desc: 'চালে বৃষ্টির মিষ্টি শব্দ',
+    sound_flute: 'বাঁশের বাঁশি',
+    sound_flute_desc: 'লোকসঙ্গীতের মধুর সুর',
+    sound_bell: 'মন্দিরের কাঁসর ও ঘণ্টা',
+    sound_bell_desc: 'সন্ধ্যার প্রার্থনার ঘণ্টা',
+    sound_birds: 'সকালের বনের পাখি',
+    sound_birds_desc: 'গাছে পাখির কলকাকলি',
+
+    // Game 5: Bazaar Saathi
+    bazaarGameTitle: 'বাজার সারথি: হাটের কেনাকাটা',
+    bazaarGameDesc: 'বাজারের তালিকা দেখে ঝুড়িতে জিনিস ভরুন।',
+    bazaarVoice: '১টি বাঁশের কোঁড়ল, ২টি আদা এবং ১টি কমলা ঝুড়িতে ভরুন ও বাজার শেষ করুন।',
+    shoppingListLabel: 'বাজারের তালিকা:',
+    bambooName: 'বাঁশের কোঁড়ল',
+    gingerName: 'কাঁচা আদা',
+    orangeName: 'পাহাড়ি কমলা',
+    basketValue: 'ঝুড়ির মূল্য',
+    totalText: 'মোট',
+    eachText: 'প্রতিটি',
+  },
+
+  hi: {
+    // Navbar
+    homeTitle: 'सेवामित्र',
+    elderlyPatient: 'बुजुर्ग मरीज',
+    caregiverDashboard: 'देखभालकर्ता डैशबोर्ड',
+    callCaregiver: 'देखभालकर्ता को कॉल करें',
+
+    // Home Page
+    homeSubtitle: 'पूर्वोत्तर भारत में बुजुर्गों के लिए स्मृति और संज्ञानात्मक सहायता मंच।',
+    playGamesBtn: 'खेल शुरू करें',
+    caregiverLink: 'देखभालकर्ता और डॉक्टर डैशबोर्ड →',
+    homeVoiceIntro: 'सेवामित्र में आपका स्वागत है। खेलने के लिए बीच वाले हरे बटन को दबाएं।',
+
+    // Patient Portal
+    welcomeGreeting: 'स्वागत है,',
+    patientSubtitle: 'खेलने के लिए नीचे से कोई भी खेल चुनें — सब कुछ एक ही स्क्रीन पर है।',
+    listen: 'सुनिए',
+    play: 'खेलें',
+    patientVoiceIntro: 'नमस्ते। खेलने के लिए स्क्रीन पर दिए गए किसी भी खेल को चुनें।',
+
+    // 5 Game Hub Titles
+    smritiSetuTitle: 'स्मृति सेतु',
+    smritiSetuSub: 'कार्ड मिलान',
+    doharaniTitle: 'दैनिक दिनचर्या',
+    doharaniSub: 'क्रमबद्ध दिनचर्या',
+    rangTantiTitle: 'पैटर्न ध्यान',
+    rangTantiSub: 'बुनाई पहचान',
+    shabdaTarangTitle: 'ध्वनि स्मृति',
+    shabdaTarangSub: 'सुनकर पहचानें',
+    bazaarSaathiTitle: 'बाजार साथी',
+    bazaarSaathiSub: 'ग्रामीण खरीदारी',
+    doubleDecisionTitle: 'दृष्टि गति (UFOV)',
+    doubleDecisionSub: 'डबल डिसीजन टेस्ट',
+    soundSweepsTitle: 'ध्वनि तरंग गति',
+    soundSweepsSub: 'ध्वनि पहचान गति',
+    targetTrackerTitle: 'टारगेट ट्रैकर',
+    targetTrackerSub: 'एकाग्रता परीक्षण',
+    brainHqSuiteTitle: 'ब्रेन-एच-क्यू न्यूरो अभ्यास',
+    culturalGamesTitle: 'सांस्कृतिक खेल',
+
+    // Patient Bottom Bar
+    routineChecklist: 'आज की दिनचर्या सूची',
+    callCaregiverName: 'सहायता कॉल: अनुराधा',
+
+    // Common Controls
+    back: 'पीछे जाएं',
+    restart: 'पुनः आरंभ करें',
+    shuffle: 'फिर से मिलाएं',
+    matched: 'मिलाया',
+    round: 'दौर',
+    level: 'स्तर',
+    checkOrder: 'क्रम जांचें',
+    finishShopping: 'खरीदारी पूरी करें',
+    wonderfulJob: 'बहुत बढ़िया!',
+    playAgain: 'फिर से खेलें',
+    returnHome: 'मुख्य पृष्ठ पर जाएं',
+    activity: 'गतिविधि',
+    score: 'अंक',
+
+    // Game 1: Smriti Setu
+    smritiGameTitle: 'स्मृति सेतु: कार्ड का जोड़ा मिलाएं',
+    smritiGameDesc: 'कार्ड पर टैप करें और उसका सही जोड़ा ढूंढें।',
+    smritiVoice: 'कार्ड को पलटने के लिए छुएं, फिर उसका मिलता-जुलता दूसरा कार्ड ढूंढें।',
+    tapToFlip: 'पलटने के लिए छुएं',
+    item_japi: 'असम जापी टोपी',
+    item_gamosa: 'लाल गमोछा',
+    item_rhino: 'एक सींग वाला गैंडा',
+    item_tea: 'चाय की पत्तियां',
+    item_hornbill: 'धनेश पक्षी',
+    item_flute: 'बिहू बांसुरी',
+
+    // Game 2: Doharani
+    doharaniGameTitle: 'दैनिक दिनचर्या: क्रम में लगाएं',
+    doharaniGameDesc: 'सुबह से शाम तक के कार्यों को सही क्रम में व्यवस्थित करें।',
+    doharaniVoice: 'तीर के बटन का उपयोग करके सुबह से शाम की गतिविधियों को सही क्रम में लगाएं।',
+    step_tea: 'सुबह की गर्म चाय और बिस्कुट',
+    step_med: 'सुबह की स्वास्थ्य की दवाई',
+    step_plants: 'आंगन के पौधों में पानी देना',
+    step_lamp: 'शाम की शांतिपूर्ण प्रार्थना व दिया',
+
+    // Game 3: Rang & Tanti
+    rangGameTitle: 'पैटर्न ध्यान: बुनाई पहचानें',
+    rangGameDesc: 'ऊपर दिए गए मुख्य पैटर्न को देखें और नीचे से मिलता-जुलता पैटर्न चुनें।',
+    rangVoice: 'ऊपर दिए गए पैटर्न को देखें और नीचे दिए गए विकल्पों में से सही बुनाई चुनें।',
+    targetToMatch: 'मिलान करने योग्य पैटर्न',
+    pattern_muga: 'मुगा सुनहरी पुष्प बुनाई',
+    pattern_gamosa: 'गमोछा का लाल किनारा',
+    pattern_naga: 'नागा शॉल का ज्यामितीय डिजाइन',
+    pattern_manipuri: 'मणिपुरी मंदिर आकृति',
+    pattern_bodo: 'बोडो अरोनाई पैटर्न',
+
+    // Game 4: Shabda Tarang
+    shabdaGameTitle: 'ध्वनि स्मृति: सुनकर चित्र पहचानें',
+    shabdaGameDesc: 'बटन दबाकर आवाज सुनें, फिर उससे मेल खाती तस्वीर चुनें।',
+    shabdaVoice: 'आवाज सुनने के लिए बड़े बटन पर टैप करें, फिर सही चित्र चुनें।',
+    playAudio: 'आवाज सुनें',
+    playingAudio: 'आवाज बज रही है...',
+    replayHint: 'जितनी बार चाहें उतनी बार दोबारा सुन सकते हैं',
+    sound_rain: 'छत पर बारिश',
+    sound_rain_desc: 'छत पर बारिश की बूंदे',
+    sound_flute: 'बांसुरी की धुन',
+    sound_flute_desc: 'पारंपरिक मधुर लोक धुन',
+    sound_bell: 'मंदिर की कांस्य घंटी',
+    sound_bell_desc: 'शाम की प्रार्थना की घंटी',
+    sound_birds: 'सुबह की जंगली चिड़ियां',
+    sound_birds_desc: 'सुबह पेड़ों पर चहचहाहट',
+
+    // Game 5: Bazaar Saathi
+    bazaarGameTitle: 'बाजार साथी: हाट की खरीदारी',
+    bazaarGameDesc: 'सामान की सूची देखकर टोकरी में सामान डालें।',
+    bazaarVoice: '1 बांस का कोपल, 2 अदरक और 1 संतरा टोकरी में डालें और खरीदारी पूरी करें।',
+    shoppingListLabel: 'खरीदारी की सूची:',
+    bambooName: 'बांस का कोपल',
+    gingerName: 'ताजा अदरक',
+    orangeName: 'पहाड़ी संतरा',
+    basketValue: 'टोकरी का मूल्य',
+    totalText: 'कुल',
+    eachText: 'प्रत्येक',
+  },
+};
