@@ -1,7 +1,18 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/client';
+import { serverSessionStore } from '@/lib/db/serverSessionStore';
 
 export const dynamic = 'force-dynamic';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
 
 export async function GET(
   request: Request,
@@ -10,35 +21,40 @@ export async function GET(
   const patientId = params.id;
 
   if (!patientId) {
-    return NextResponse.json({ error: 'Patient ID is required' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Patient ID is required' },
+      { status: 400, headers: corsHeaders }
+    );
   }
+
+  let sessions: any[] = [];
 
   if (prisma) {
     try {
-      const sessions = await prisma.cognitiveSession.findMany({
+      const dbSessions = await prisma.cognitiveSession.findMany({
         where: { patientId },
         orderBy: { createdAt: 'desc' },
       });
-
-      return NextResponse.json(
-        { sessions },
-        {
-          headers: {
-            'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=86400',
-          },
-        }
-      );
+      if (dbSessions && dbSessions.length > 0) {
+        sessions = dbSessions;
+      }
     } catch (e) {
       console.warn('PostgreSQL fetch error for patient sessions:', e);
     }
   }
 
+  if (sessions.length === 0) {
+    sessions = serverSessionStore.getSessions(patientId);
+  }
+
   return NextResponse.json(
-    { sessions: [] },
+    { sessions },
     {
       headers: {
-        'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=86400',
+        ...corsHeaders,
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
       },
     }
   );
 }
+
