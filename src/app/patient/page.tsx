@@ -1227,7 +1227,7 @@ function PatientPageContent() {
                     EMERGENCY CALL
                   </span>
                   <h3 className="font-clash-bold" style={{ fontSize: '1.3rem', color: '#1c1b1b', margin: '0 0 0.35rem', textTransform: 'uppercase' }}>
-                    9846198473
+                    Emergency Helpline
                   </h3>
                   <p className="font-clash-regular" style={{ fontSize: '0.86rem', color: '#57534e', margin: 0 }}>
                     24/7 urgent medical & rapid SOS emergency response.
