@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     if (apiKey) {
       const telemetrySummary = hasData
         ? `Telemetry: Visual UFOV ${telemetry.sightSpeedMs !== undefined ? `${telemetry.sightSpeedMs}ms (Normal <200)` : 'Not Tested'}, Auditory ${telemetry.soundSweepsMs !== undefined ? `${telemetry.soundSweepsMs}ms (Normal <100)` : 'Not Tested'}, Tracking ${telemetry.targetTrackerScore !== undefined ? `${telemetry.targetTrackerScore}% (Normal >80)` : 'Not Tested'}, Motor Hesitation ${telemetry.hesitationMs !== undefined ? `${telemetry.hesitationMs}ms (Normal <1200)` : 'Not Tested'}, Sundowning Divergence: ${telemetry.sundowningDivergencePct !== undefined ? `+${telemetry.sundowningDivergencePct}%` : 'Insufficient diurnal data'}, Total Sessions: ${telemetry.sessionsCount || 1}.`
-        : `Telemetry: Zero assessment sessions completed yet. Baseline screening is pending on the Patient Kiosk.`;
+        : `Telemetry: Zero assessment sessions completed yet. Baseline screening is pending on Patient Home.`;
 
       const systemPrompt = `You are a Senior Consulting Neuropsychologist for SevaMitr OPD clinic.
 Patient: ${patient.fullName}, ${patient.age}y ${patient.gender || 'Patient'}, ${patient.region || 'Assam'}. Stage: ${patient.dementiaStage || 'MCI'}.
@@ -71,7 +71,7 @@ Provide high-yield OPD clinical details in strict JSON matching schema:
   "sbar": {
     "situation": "1 punchy line: screening trigger & baseline index for ${patient.fullName}",
     "background": "1 punchy line: patient demographics & language (${language})",
-    "assessment": "1-2 lines on clinical/anatomical localization: ${hasData ? 'occipitoparietal visual vs temporal auditory vs parietal dorsal stream vs frontostriatal motor latency' : 'mention that baseline game sessions are pending on the Kiosk'}",
+    "assessment": "1-2 lines on clinical/anatomical localization: ${hasData ? 'occipitoparietal visual vs temporal auditory vs parietal dorsal stream vs frontostriatal motor latency' : 'mention that baseline game sessions are pending on Patient Home'}",
     "recommendation": "2-3 concise bulleted clinical next steps (MoCA subtests, medication check, ambient lighting)"
   },
   "domainBreakdown": {

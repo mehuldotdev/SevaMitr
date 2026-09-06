@@ -40,7 +40,7 @@ export default function PatientHomePage() {
   const [checkingPatient, setCheckingPatient] = useState(true);
   const [mounted, setMounted] = useState(false);
   const { language, t } = useLanguage();
-  const [activeNav, setActiveNav] = useState<'games' | 'kiosk'>('games');
+  const [activeNav, setActiveNav] = useState<'games' | 'home'>('games');
   const [showDoctorModal, setShowDoctorModal] = useState<boolean>(false);
 
   // Add Patient Form state
@@ -357,7 +357,7 @@ export default function PatientHomePage() {
               margin: '0 0 1.5rem',
             }}
           >
-            Please sign in to access the Patient Kiosk exercises and games.
+            Please sign in to access the Patient Home exercises and games.
           </p>
 
           <Link
@@ -1069,10 +1069,10 @@ export default function PatientHomePage() {
           </>
         )}
 
-        {/* VIEW 2: KIOSK OVERVIEW (activeNav === 'kiosk') */}
-        {activeNav === 'kiosk' && (
+        {/* VIEW 2: HOME OVERVIEW (activeNav === 'home') */}
+        {activeNav === 'home' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem', marginBottom: '2rem' }}>
-            {/* Welcoming Kiosk Hero Card */}
+            {/* Welcoming Home Hero Card */}
             <div
               className="neo-card"
               style={{
@@ -1089,7 +1089,7 @@ export default function PatientHomePage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                   <Sun size={20} color="#b8860b" />
                   <span className="font-clash-wide" style={{ fontSize: '0.78rem', color: '#78716c' }}>
-                    PATIENT KIOSK PORTAL
+                    PATIENT HOME PORTAL
                   </span>
                 </div>
                 <h1
@@ -1290,11 +1290,11 @@ export default function PatientHomePage() {
       <nav className="neo-bottom-dock font-clash-semibold" aria-label="Quick Patient Navigation">
         <button
           type="button"
-          onClick={() => setActiveNav('kiosk')}
-          className={`neo-dock-btn ${activeNav === 'kiosk' ? 'active' : ''}`}
+          onClick={() => setActiveNav('home')}
+          className={`neo-dock-btn ${activeNav === 'home' ? 'active' : ''}`}
         >
           <Home size={18} />
-          <span>Kiosk</span>
+          <span>Home</span>
         </button>
 
         <button

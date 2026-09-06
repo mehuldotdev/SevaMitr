@@ -150,7 +150,7 @@ export default function HomePage() {
             alignItems: 'stretch',
           }}
         >
-          {/* DOOR 1: ELDERLY PATIENT KIOSK */}
+          {/* DOOR 1: ELDERLY PATIENT HOME */}
           <div
             className="neo-card"
             style={{
@@ -204,7 +204,7 @@ export default function HomePage() {
                   textTransform: 'uppercase',
                 }}
               >
-                Patient Kiosk
+                Patient Home
               </h2>
 
               <p

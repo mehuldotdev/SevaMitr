@@ -41,7 +41,7 @@ export function analyzePatientCognitiveData(sessions: CognitiveSessionRecord[]):
         morningAvgScore: 0,
         eveningAvgScore: 0,
         latencyDivergencePct: 0,
-        recommendation: 'Awaiting baseline cognitive sessions. Play an assessment on the Patient Kiosk to begin profiling.',
+        recommendation: 'Awaiting baseline cognitive sessions. Play an assessment on Patient Home to begin profiling.',
       },
       motorHesitation: {
         avgLatencyMs: 0,

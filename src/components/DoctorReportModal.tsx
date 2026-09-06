@@ -189,7 +189,7 @@ export function DoctorReportModal({
               `${i + 1}. [${g.priority}] ${g.title} (${g.domain}) — ${g.frequency}\n   Rationale: ${g.clinicalRationale}`
           )
           .join('\n')
-      : 'Initial 4-game baseline circuit on Patient Kiosk.';
+      : 'Initial 4-game baseline circuit on Patient Home.';
 
     const text = `SEVAMITR CLINICAL NEURO-TRIAGE REPORT
 Patient: ${patient.fullName} (${patient.age}y, ${patient.gender}) | Region: ${patient.region}

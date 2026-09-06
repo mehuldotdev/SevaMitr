@@ -90,7 +90,7 @@ export function computeDeterministicReport(
         situation: `${patientName} (${patient.age}y, ${patient.region || 'NER'}). Baseline cognitive screening pending.`,
         background: `Patient profile active. Primary language: ${(patient.primaryLanguage || language || 'en').toUpperCase()}. Stage: ${patient.dementiaStage || 'MCI'}. 0 completed assessment sessions on record.`,
         assessment: `No objective game telemetry recorded yet. Awaiting completion of waiting-room neuro-attentional trials (Double Decision, Sound Sweeps, Target Tracker, Speed Maze).`,
-        recommendation: `1. Direct patient to complete initial screening circuit on the Patient Kiosk.\n2. Inquire with family about subjective changes in daily memory, orientation, and navigation.\n3. Conduct standard clinical intake interview.`,
+        recommendation: `1. Direct patient to complete initial screening circuit on Patient Home.\n2. Inquire with family about subjective changes in daily memory, orientation, and navigation.\n3. Conduct standard clinical intake interview.`,
       },
       domainBreakdown: {
         visualSpeed: {

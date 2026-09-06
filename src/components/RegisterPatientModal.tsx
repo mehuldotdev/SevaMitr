@@ -478,7 +478,7 @@ export function RegisterPatientModal({
                     style={{ width: '16px', height: '16px', cursor: 'pointer' }}
                   />
                   <span className="font-clash-semibold" style={{ fontSize: '0.85rem', color: '#1c1b1b' }}>
-                    Enable Dedicated Tablet / Kiosk Login
+                    Enable Dedicated Tablet / Home Login
                   </span>
                 </label>
                 <KeyRound size={16} color="#64748b" />

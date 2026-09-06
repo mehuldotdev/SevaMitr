@@ -189,7 +189,7 @@ function HomeAuthContent() {
                   textTransform: 'uppercase',
                 }}
               >
-                <span>Continue to {user.role === 'PATIENT' ? 'Patient Kiosk' : 'Dashboard'}</span>
+                <span>Continue to {user.role === 'PATIENT' ? 'Patient Home' : 'Dashboard'}</span>
                 <ArrowRight size={18} />
               </Link>
 
