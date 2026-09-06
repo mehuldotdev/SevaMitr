@@ -15,7 +15,7 @@ interface CelebrationModalProps {
   message?: string;
   biomarkerLabel?: string;
   onPlayAgain: () => void;
-  nextGameUrl?: string;
+  nextGameUrl?: string | null;
   homeUrl?: string;
 }
 
@@ -33,18 +33,27 @@ export function CelebrationModal({
   const { language, t } = useLanguage();
   const grade = computeGrade(score, biomarkerLabel);
 
-  // Cognitive circuit sequence mapping
-  const DEFAULT_SEQUENCE: Record<string, string> = {
+  // Cognitive circuit sequence mapping (6-game assessment circuit)
+  // Game 6 (Bikhama Khoj) is the final game of the circuit, so there is no next game after it.
+  const DEFAULT_SEQUENCE: Record<string, string | null> = {
     'BrainHQ: Double Decision': '/patient/games/sound-sweeps',
     'BrainHQ: Sound Sweeps': '/patient/games/target-tracker',
     'BrainHQ: Target Tracker': '/patient/games/speed-maze',
     'Speed Maze (Spatial Navigation)': '/patient/games/bijuli-tap',
     'Bijuli Tap (Psychomotor Speed)': '/patient/games/bikhama-khoj',
-    'Bikhama Khoj (Visual Search)': '/patient/games/double-decision',
+    'Bikhama Khoj (Visual Search)': null,
   };
 
-  const resolvedNextGameUrl =
-    (nextGameUrl && nextGameUrl !== '/patient')
+  const isFinalGame =
+    nextGameUrl === null ||
+    nextGameUrl === '' ||
+    gameTitle.includes('Bikhama Khoj') ||
+    gameTitle.includes('bikhama-khoj') ||
+    DEFAULT_SEQUENCE[gameTitle] === null;
+
+  const resolvedNextGameUrl: string | null = isFinalGame
+    ? null
+    : (nextGameUrl && nextGameUrl !== '/patient')
       ? nextGameUrl
       : DEFAULT_SEQUENCE[gameTitle] ||
         (gameTitle.includes('Double Decision') ? '/patient/games/sound-sweeps' :
@@ -52,8 +61,7 @@ export function CelebrationModal({
          gameTitle.includes('Target Tracker') ? '/patient/games/speed-maze' :
          gameTitle.includes('Speed Maze') ? '/patient/games/bijuli-tap' :
          gameTitle.includes('Bijuli Tap') ? '/patient/games/bikhama-khoj' :
-         gameTitle.includes('Bikhama Khoj') ? '/patient/games/double-decision' :
-         '/patient/games/double-decision');
+         null);
 
   useEffect(() => {
     if (isOpen) {
@@ -359,33 +367,37 @@ export function CelebrationModal({
             <span>{t('playAgain')}</span>
           </button>
 
-          {/* 2. Next Game (Just above Return to Home) */}
-          <Link
-            href={resolvedNextGameUrl}
-            className="btn-elderly btn-elderly-primary"
-            style={{
-              width: '100%',
-              justifyContent: 'center',
-              textDecoration: 'none',
-              border: '2px solid var(--color-border, #1c1b1b)',
-              boxShadow: '3px 3px 0px var(--color-border, #1c1b1b)',
-              fontWeight: 700,
-            }}
-          >
-            <span>{t('nextGame') || 'Next Game'}</span>
-            <ArrowRight size={20} />
-          </Link>
+          {/* 2. Next Game (Only rendered when there is a subsequent game in the circuit) */}
+          {resolvedNextGameUrl && (
+            <Link
+              href={resolvedNextGameUrl}
+              className="btn-elderly btn-elderly-primary"
+              style={{
+                width: '100%',
+                justifyContent: 'center',
+                textDecoration: 'none',
+                border: '2px solid var(--color-border, #1c1b1b)',
+                boxShadow: '3px 3px 0px var(--color-border, #1c1b1b)',
+                fontWeight: 700,
+              }}
+            >
+              <span>{t('nextGame') || 'Next Game'}</span>
+              <ArrowRight size={20} />
+            </Link>
+          )}
 
           {/* 3. Return to Home */}
           <Link
             href={homeUrl}
-            className="btn-elderly btn-elderly-secondary"
+            className={`btn-elderly ${resolvedNextGameUrl ? 'btn-elderly-secondary' : 'btn-elderly-primary'}`}
             style={{
               width: '100%',
               justifyContent: 'center',
               textDecoration: 'none',
               border: '2px solid var(--color-border, #1c1b1b)',
-              boxShadow: '2px 2px 0px var(--color-border, #1c1b1b)',
+              boxShadow: resolvedNextGameUrl
+                ? '2px 2px 0px var(--color-border, #1c1b1b)'
+                : '3px 3px 0px var(--color-border, #1c1b1b)',
               fontWeight: 700,
             }}
           >
