@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
-  Volume2,
   RotateCcw,
   Compass,
   Lightbulb,
@@ -264,18 +263,6 @@ export default function SpeedMazeGame() {
     brainHqAudio.playStepTick();
   };
 
-  // Audio prompt in local language
-  const speakVoicePrompt = () => {
-    const text =
-      language === 'as'
-        ? 'গতি গোলকধাঁধা: পথালি বাটেৰে পথিকজনক গাঁৱৰ জিৰণি ঘৰলৈ আগবঢ়াই নিয়ক। কাঁড় বা কাষৰ বাকচত স্পৰ্শ কৰক।'
-        : language === 'bn'
-        ? 'গতি গোলকধাঁধা: পথ ধরে পথিককে গ্রামের আশ্রয়ে পৌঁছে দিন। তীরচিহ্ন বা পাশের ঘরে স্পর্শ করে এগিয়ে চলুন।'
-        : language === 'hi'
-        ? 'गति भूलभुलैया: पथिक को सुरक्षित रास्ते से गाँव के आश्रय तक पहुँचाएँ। तीरों या पास के डिब्बे को छूकर आगे बढ़ें।'
-        : 'Speed Maze. Guide the voyager safely along the pathway to the village sanctuary. Tap arrows or adjacent tiles to move.';
-    brainHqAudio.speakPrompt(text, language);
-  };
 
   // Cell tap handler (Direct tile clicking)
   const handleCellClick = (r: number, c: number) => {
@@ -410,24 +397,6 @@ export default function SpeedMazeGame() {
             </p>
           </div>
 
-          <button
-            onClick={speakVoicePrompt}
-            className="neo-pill font-clash-wide"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              padding: '0.45rem 0.85rem',
-              fontSize: '0.75rem',
-              cursor: 'pointer',
-              background: '#e8f5e9',
-              border: '2px solid #1c1b1b',
-              color: '#214935',
-            }}
-          >
-            <Volume2 size={16} />
-            <span>LISTEN</span>
-          </button>
         </div>
 
         {/* Maze Game Board */}

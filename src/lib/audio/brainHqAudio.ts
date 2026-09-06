@@ -28,42 +28,60 @@ class BrainHqAudioEngine {
    * @param direction 'up' (low to high) or 'down' (high to low)
    * @param durationSec sweep duration in seconds (standard: 0.12s - 0.15s)
    */
-  public playSweep(direction: 'up' | 'down', durationSec: number = 0.13): Promise<void> {
-    return new Promise((resolve) => {
-      try {
-        const ctx = this.getContext();
-        const now = ctx.currentTime;
-
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-
-        const startFreq = direction === 'up' ? 440 : 880;
-        const endFreq = direction === 'up' ? 880 : 440;
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(startFreq, now);
-        osc.frequency.exponentialRampToValueAtTime(endFreq, now + durationSec);
-
-        // Smooth attack & release envelope to eliminate speaker clicks
-        gain.gain.setValueAtTime(0.0001, now);
-        gain.gain.exponentialRampToValueAtTime(0.35, now + 0.015);
-        gain.gain.setValueAtTime(0.35, now + durationSec - 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + durationSec);
-
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.start(now);
-        osc.stop(now + durationSec);
-
-        osc.onended = () => {
-          resolve();
-        };
-      } catch (err) {
-        console.warn('Web Audio sweep playback error:', err);
-        resolve();
+  public async playSweep(direction: 'up' | 'down', durationSec: number = 0.15): Promise<void> {
+    try {
+      const ctx = this.getContext();
+      if (ctx.state === 'suspended') {
+        await ctx.resume().catch(() => {});
       }
-    });
+
+      return new Promise((resolve) => {
+        let isResolved = false;
+        const safeResolve = () => {
+          if (!isResolved) {
+            isResolved = true;
+            resolve();
+          }
+        };
+
+        try {
+          const startAt = ctx.currentTime + 0.02;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          const startFreq = direction === 'up' ? 440 : 880;
+          const endFreq = direction === 'up' ? 880 : 440;
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(startFreq, startAt);
+          osc.frequency.exponentialRampToValueAtTime(endFreq, startAt + durationSec);
+
+          // Smooth attack & release envelope to eliminate speaker clicks
+          gain.gain.setValueAtTime(0.001, startAt);
+          gain.gain.exponentialRampToValueAtTime(0.4, startAt + 0.02);
+          gain.gain.setValueAtTime(0.4, startAt + durationSec - 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, startAt + durationSec);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(startAt);
+          osc.stop(startAt + durationSec);
+
+          osc.onended = () => {
+            safeResolve();
+          };
+
+          // Failsafe timeout so promise never hangs
+          setTimeout(safeResolve, (durationSec + 0.1) * 1000);
+        } catch (err) {
+          console.warn('Web Audio sweep playback error:', err);
+          safeResolve();
+        }
+      });
+    } catch {
+      return Promise.resolve();
+    }
   }
 
   /**
@@ -75,9 +93,9 @@ class BrainHqAudioEngine {
     sweep2: 'up' | 'down',
     isiMs: number
   ): Promise<void> {
-    await this.playSweep(sweep1, 0.13);
-    await new Promise((r) => setTimeout(r, isiMs));
-    await this.playSweep(sweep2, 0.13);
+    await this.playSweep(sweep1, 0.15);
+    await new Promise((r) => setTimeout(r, Math.max(50, isiMs)));
+    await this.playSweep(sweep2, 0.15);
   }
 
   /**

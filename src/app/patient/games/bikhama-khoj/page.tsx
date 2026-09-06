@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
-  Volume2,
   Eye,
   Maximize2,
   Minimize2,
@@ -238,13 +237,6 @@ export default function BikhamaKhojGame() {
     brainHqAudio.playStepTick();
   };
 
-  // Native Web Speech Voice Prompts
-  const speakVoicePrompt = () => {
-    const text =
-      roundConfig.promptText[language as 'as' | 'bn' | 'hi' | 'en'] ||
-      roundConfig.promptText.en;
-    brainHqAudio.speakPrompt(text, language);
-  };
 
   const avgSpeedMs = roundLatencies.length > 0
     ? Math.round(roundLatencies.reduce((a, b) => a + b, 0) / roundLatencies.length)
@@ -390,24 +382,6 @@ export default function BikhamaKhojGame() {
               <span>HINT</span>
             </button>
 
-            <button
-              onClick={speakVoicePrompt}
-              className="neo-pill font-clash-wide"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                padding: '0.45rem 0.75rem',
-                fontSize: '0.72rem',
-                cursor: 'pointer',
-                background: '#e8f5e9',
-                border: '2px solid #1c1b1b',
-                color: '#214935',
-              }}
-            >
-              <Volume2 size={15} />
-              <span>LISTEN</span>
-            </button>
           </div>
         </div>
 

@@ -33,7 +33,7 @@ export default function SoundSweepsGame() {
   const [trial, setTrial] = useState<number>(1);
   const maxTrials = 5;
   const [isiMs, setIsiMs] = useState<number>(300); // Inter-stimulus interval temporal resolution
-  const [state, setState] = useState<'INTRO' | 'READY' | 'PLAYING_AUDIO' | 'USER_INPUT' | 'FEEDBACK' | 'COMPLETE'>('INTRO');
+  const [state, setState] = useState<'READY' | 'PLAYING_AUDIO' | 'USER_INPUT' | 'FEEDBACK' | 'COMPLETE'>('READY');
   const [currentPattern, setCurrentPattern] = useState<SweepPattern>(PATTERNS[0]);
   const [userSelection, setUserSelection] = useState<string | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
@@ -151,13 +151,6 @@ export default function SoundSweepsGame() {
     setState('USER_INPUT');
   };
 
-  const speakPrompt = () => {
-    brainHqAudio.speakPrompt(
-      'Sound Sweeps test. Listen to the two musical tones. Did each tone sweep upward or downward?',
-      language
-    );
-  };
-
   return (
     <div
       style={{
@@ -214,40 +207,25 @@ export default function SoundSweepsGame() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
             <button
+              type="button"
               onClick={toggleFullscreen}
               className="neo-pill font-clash-semibold"
               style={{
                 background: '#ffffff',
                 color: '#1c1b1b',
-                padding: '0.45rem 0.85rem',
-                cursor: 'pointer',
-                fontSize: '0.85rem',
+                padding: '0.45rem 0.95rem',
+                fontSize: '0.92rem',
                 fontWeight: 600,
+                textTransform: 'uppercase',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '0.35rem',
+                cursor: 'pointer',
               }}
               title="Toggle Fullscreen"
             >
               {isFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
               <span>{isFullscreen ? 'Exit' : 'Fullscreen'}</span>
-            </button>
-
-            <button
-              onClick={speakPrompt}
-              className="neo-pill font-clash-semibold"
-              style={{
-                background: '#ffffff',
-                color: '#1c1b1b',
-                padding: '0.45rem 0.95rem',
-                cursor: 'pointer',
-                fontSize: '0.92rem',
-                fontWeight: 600,
-                textTransform: 'uppercase',
-              }}
-            >
-              <Volume2 size={16} />
-              <span>{t('listen')}</span>
             </button>
           </div>
         </div>

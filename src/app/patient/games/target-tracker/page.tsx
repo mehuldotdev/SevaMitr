@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Volume2, Eye, RotateCcw, Target, ShieldCheck, Maximize2, Minimize2 } from 'lucide-react';
+import { ArrowLeft, Eye, RotateCcw, Target, ShieldCheck, Maximize2, Minimize2 } from 'lucide-react';
 import { brainHqAudio } from '@/lib/audio/brainHqAudio';
 import { offlineDb } from '@/lib/db/offlineDb';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
@@ -254,13 +254,6 @@ export default function TargetTrackerGame() {
     });
   };
 
-  const speakPrompt = () => {
-    brainHqAudio.speakPrompt(
-      'Target Tracker. Remember the two glowing items. Follow them with your eyes as they move, and touch them when they stop.',
-      language
-    );
-  };
-
   return (
     <div
       style={{
@@ -317,15 +310,16 @@ export default function TargetTrackerGame() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
             <button
+              type="button"
               onClick={toggleFullscreen}
               className="neo-pill font-clash-semibold"
               style={{
                 background: '#ffffff',
                 color: '#1c1b1b',
-                padding: '0.45rem 0.85rem',
-                cursor: 'pointer',
-                fontSize: '0.85rem',
+                padding: '0.45rem 0.95rem',
+                fontSize: '0.92rem',
                 fontWeight: 600,
+                textTransform: 'uppercase',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '0.35rem',
@@ -334,23 +328,6 @@ export default function TargetTrackerGame() {
             >
               {isFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
               <span>{isFullscreen ? 'Exit' : 'Fullscreen'}</span>
-            </button>
-
-            <button
-              onClick={speakPrompt}
-              className="neo-pill font-clash-semibold"
-              style={{
-                background: '#ffffff',
-                color: '#1c1b1b',
-                padding: '0.45rem 0.95rem',
-                cursor: 'pointer',
-                fontSize: '0.92rem',
-                fontWeight: 600,
-                textTransform: 'uppercase',
-              }}
-            >
-              <Volume2 size={16} />
-              <span>{t('listen')}</span>
             </button>
           </div>
         </div>

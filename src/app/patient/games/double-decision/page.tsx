@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Volume2, Sparkles, CheckCircle2, RotateCcw, Zap, Maximize2, Minimize2 } from 'lucide-react';
+import { ArrowLeft, Sparkles, CheckCircle2, RotateCcw, Zap, Maximize2, Minimize2 } from 'lucide-react';
 import { brainHqAudio } from '@/lib/audio/brainHqAudio';
 import { offlineDb } from '@/lib/db/offlineDb';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
@@ -231,13 +231,6 @@ export default function DoubleDecisionGame() {
     });
   };
 
-  const speakInstructions = () => {
-    brainHqAudio.speakPrompt(
-      'Double Decision test. Focus on the center. Remember what is in the center, and watch where the star appears on the edge.',
-      language
-    );
-  };
-
   // Radius for peripheral ring in px
   const ringRadius = 110;
 
@@ -314,25 +307,6 @@ export default function DoubleDecisionGame() {
             >
               {isFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
               <span>{isFullscreen ? 'Exit' : 'Fullscreen'}</span>
-            </button>
-
-            <button
-              onClick={speakInstructions}
-              className="neo-pill font-clash-semibold"
-              style={{
-                background: '#ffffff',
-                color: '#1c1b1b',
-                padding: '0.45rem 0.85rem',
-                cursor: 'pointer',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-              }}
-            >
-              <Volume2 size={15} />
-              <span>{t('listen')}</span>
             </button>
           </div>
         </div>

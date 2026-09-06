@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
-  Volume2,
   Zap,
   Bell,
   Maximize2,
@@ -294,18 +293,6 @@ export default function BijuliTapGame() {
     });
   };
 
-  // Native Web Speech Voice Prompts
-  const speakVoicePrompt = () => {
-    const text =
-      language === 'as'
-        ? 'বিজুলী টেপ: ঘণ্টা বাজি উঠাৰ লগে লগে যিমান পাৰে সোনকালে স্ক্ৰীণত স্পৰ্শ কৰক। ৰঙা ঘণ্টা বাজিলে স্পৰ্শ নকৰিব।'
-        : language === 'bn'
-        ? 'বিজলী ট্যাপ: ঘণ্টা বাজার সাথে সাথে যত দ্রুত সম্ভব স্ক্রিনে স্পর্শ করুন। লাল ঘণ্টা বাজলে স্পর্শ করবেন না।'
-        : language === 'hi'
-        ? 'बिजली टैप: घंटी बजते ही जितनी जल्दी हो सके स्क्रीन पर टैप करें। लाल घंटी बजने पर रुकें।'
-        : 'Bijuli Tap. As soon as the golden bell rings, tap the screen as fast as lightning. Do not tap if a red gong appears.';
-    brainHqAudio.speakPrompt(text, language);
-  };
 
   // Computed summary metrics
   const validGoRTs = trialsResults
@@ -436,24 +423,6 @@ export default function BijuliTapGame() {
             </p>
           </div>
 
-          <button
-            onClick={speakVoicePrompt}
-            className="neo-pill font-clash-wide"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-              padding: '0.45rem 0.85rem',
-              fontSize: '0.75rem',
-              cursor: 'pointer',
-              background: '#e8f5e9',
-              border: '2px solid #1c1b1b',
-              color: '#214935',
-            }}
-          >
-            <Volume2 size={16} />
-            <span>LISTEN</span>
-          </button>
         </div>
 
         {/* Massive Interactive Tap Arena */}
