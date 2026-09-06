@@ -1032,13 +1032,13 @@ export default function PatientHomePage() {
                       </h2>
                     </div>
 
-                    {/* Tactile Action Duo (Equal 50px height alignment) */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', width: '100%', height: '50px' }}>
+                    {/* Tactile Action Button (Full-width, Dementia-friendly tap target) */}
+                    <div style={{ width: '100%', height: '50px' }}>
                       <Link
                         href={ex.href}
                         className="font-clash-semibold"
                         style={{
-                          flex: 1,
+                          width: '100%',
                           background: ex.accentColor,
                           color: '#ffffff',
                           height: '50px',
@@ -1061,27 +1061,6 @@ export default function PatientHomePage() {
                       >
                         <Play size={16} fill="#ffffff" />
                         <span>Play</span>
-                      </Link>
-
-                      <Link
-                        href={ex.href}
-                        className="neo-fab-circle"
-                        style={{
-                          background: ex.accentColor,
-                          width: '50px',
-                          height: '50px',
-                          minWidth: '50px',
-                          minHeight: '50px',
-                          color: '#ffffff',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0,
-                          boxSizing: 'border-box',
-                        }}
-                        aria-label={`Launch ${ex.title}`}
-                      >
-                        <span style={{ fontSize: '1.25rem', lineHeight: 1 }}>↗</span>
                       </Link>
                     </div>
                   </div>

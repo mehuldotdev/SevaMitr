@@ -226,7 +226,7 @@ export default function HomePage() {
                 href="/patient"
                 className="font-clash-semibold"
                 style={{
-                  flex: 1,
+                  width: '100%',
                   background: '#214935',
                   color: '#ffffff',
                   height: '50px',
@@ -249,16 +249,6 @@ export default function HomePage() {
               >
                 <Play size={16} fill="#ffffff" />
                 <span>Play</span>
-              </Link>
-
-              <Link
-                href="/patient"
-                className="neo-fab-circle"
-                style={{ width: '50px', height: '50px', flexShrink: 0 }}
-                title="Launch Patient Kiosk"
-                aria-label="Launch Patient Kiosk"
-              >
-                <ArrowUpRight size={20} strokeWidth={2.5} />
               </Link>
             </div>
           </div>
@@ -339,7 +329,7 @@ export default function HomePage() {
                 href="/caregiver"
                 className="font-clash-semibold"
                 style={{
-                  flex: 1,
+                  width: '100%',
                   background: '#1c1b1b',
                   color: '#ffffff',
                   height: '50px',
@@ -362,16 +352,6 @@ export default function HomePage() {
               >
                 <Activity size={16} />
                 <span>Dashboard</span>
-              </Link>
-
-              <Link
-                href="/caregiver"
-                className="neo-fab-circle"
-                style={{ background: '#1c1b1b', width: '50px', height: '50px', flexShrink: 0 }}
-                title="Open Caregiver Dashboard"
-                aria-label="Open Caregiver Dashboard"
-              >
-                <ArrowUpRight size={20} strokeWidth={2.5} />
               </Link>
             </div>
           </div>
