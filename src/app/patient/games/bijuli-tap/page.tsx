@@ -704,7 +704,7 @@ export default function BijuliTapGame() {
           sessionStartTimeRef.current = Date.now();
           setPhase('INTRO');
         }}
-        nextGameUrl="/patient"
+        nextGameUrl="/patient/games/bikhama-khoj"
       />
     </div>
   );

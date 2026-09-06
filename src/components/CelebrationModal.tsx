@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { Star, CheckCircle, Home, Activity } from 'lucide-react';
+import { Star, CheckCircle, Home, Activity, ArrowRight, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { computeGrade } from '@/lib/scoring/gradingEngine';
@@ -16,6 +16,7 @@ interface CelebrationModalProps {
   biomarkerLabel?: string;
   onPlayAgain: () => void;
   nextGameUrl?: string;
+  homeUrl?: string;
 }
 
 export function CelebrationModal({
@@ -26,10 +27,33 @@ export function CelebrationModal({
   message,
   biomarkerLabel,
   onPlayAgain,
-  nextGameUrl = '/patient',
+  nextGameUrl,
+  homeUrl = '/patient',
 }: CelebrationModalProps) {
   const { language, t } = useLanguage();
   const grade = computeGrade(score, biomarkerLabel);
+
+  // Cognitive circuit sequence mapping
+  const DEFAULT_SEQUENCE: Record<string, string> = {
+    'BrainHQ: Double Decision': '/patient/games/sound-sweeps',
+    'BrainHQ: Sound Sweeps': '/patient/games/target-tracker',
+    'BrainHQ: Target Tracker': '/patient/games/speed-maze',
+    'Speed Maze (Spatial Navigation)': '/patient/games/bijuli-tap',
+    'Bijuli Tap (Psychomotor Speed)': '/patient/games/bikhama-khoj',
+    'Bikhama Khoj (Visual Search)': '/patient/games/double-decision',
+  };
+
+  const resolvedNextGameUrl =
+    (nextGameUrl && nextGameUrl !== '/patient')
+      ? nextGameUrl
+      : DEFAULT_SEQUENCE[gameTitle] ||
+        (gameTitle.includes('Double Decision') ? '/patient/games/sound-sweeps' :
+         gameTitle.includes('Sound Sweeps') ? '/patient/games/target-tracker' :
+         gameTitle.includes('Target Tracker') ? '/patient/games/speed-maze' :
+         gameTitle.includes('Speed Maze') ? '/patient/games/bijuli-tap' :
+         gameTitle.includes('Bijuli Tap') ? '/patient/games/bikhama-khoj' :
+         gameTitle.includes('Bikhama Khoj') ? '/patient/games/double-decision' :
+         '/patient/games/double-decision');
 
   useEffect(() => {
     if (isOpen) {
@@ -318,16 +342,53 @@ export function CelebrationModal({
           );
         })()}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
+          {/* 1. Play Again */}
           <button
             onClick={onPlayAgain}
-            className="btn-elderly btn-elderly-primary"
-            style={{ width: '100%' }}
+            className="btn-elderly btn-elderly-secondary"
+            style={{
+              width: '100%',
+              justifyContent: 'center',
+              border: '2px solid var(--color-border, #1c1b1b)',
+              boxShadow: '2px 2px 0px var(--color-border, #1c1b1b)',
+              fontWeight: 700,
+            }}
           >
-            {t('playAgain')}
+            <RotateCcw size={20} />
+            <span>{t('playAgain')}</span>
           </button>
 
-          <Link href={nextGameUrl} className="btn-elderly btn-elderly-secondary" style={{ width: '100%' }}>
+          {/* 2. Next Game (Just above Return to Home) */}
+          <Link
+            href={resolvedNextGameUrl}
+            className="btn-elderly btn-elderly-primary"
+            style={{
+              width: '100%',
+              justifyContent: 'center',
+              textDecoration: 'none',
+              border: '2px solid var(--color-border, #1c1b1b)',
+              boxShadow: '3px 3px 0px var(--color-border, #1c1b1b)',
+              fontWeight: 700,
+            }}
+          >
+            <span>{t('nextGame') || 'Next Game'}</span>
+            <ArrowRight size={20} />
+          </Link>
+
+          {/* 3. Return to Home */}
+          <Link
+            href={homeUrl}
+            className="btn-elderly btn-elderly-secondary"
+            style={{
+              width: '100%',
+              justifyContent: 'center',
+              textDecoration: 'none',
+              border: '2px solid var(--color-border, #1c1b1b)',
+              boxShadow: '2px 2px 0px var(--color-border, #1c1b1b)',
+              fontWeight: 700,
+            }}
+          >
             <Home size={20} />
             <span>{t('returnHome')}</span>
           </Link>

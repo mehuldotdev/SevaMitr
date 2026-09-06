@@ -536,7 +536,7 @@ export default function BikhamaKhojGame() {
           setIsGameOver(false);
           setupRound(1, freshRounds);
         }}
-        nextGameUrl="/patient"
+        nextGameUrl="/patient/games/double-decision"
       />
     </div>
   );

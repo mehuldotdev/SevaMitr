@@ -714,7 +714,7 @@ export default function SpeedMazeGame() {
           setupRound(1);
           sessionStartTimeRef.current = Date.now();
         }}
-        nextGameUrl="/patient"
+        nextGameUrl="/patient/games/bijuli-tap"
       />
     </div>
   );

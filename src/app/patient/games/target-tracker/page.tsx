@@ -582,7 +582,7 @@ export default function TargetTrackerGame() {
           setPhase('READY');
           totalDurationStartRef.current = Date.now();
         }}
-        nextGameUrl="/patient"
+        nextGameUrl="/patient/games/speed-maze"
       />
     </div>
   );
