@@ -15,15 +15,15 @@ interface AuthContextType {
   user: AuthUser | null;
   isLoggedIn: boolean;
   isLoading: boolean;
-  login: (identifier: string, password: string) => Promise<{ success: boolean; error?: string; role?: string }>;
-  loginDemo: (role: 'PATIENT' | 'CAREGIVER') => Promise<{ success: boolean; role?: string }>;
+  login: (identifier: string, password: string) => Promise<{ success: boolean; error?: string; role?: string; user?: AuthUser }>;
+  loginDemo: (role: 'PATIENT' | 'CAREGIVER') => Promise<{ success: boolean; role?: string; user?: AuthUser }>;
   signup: (data: {
     fullName: string;
     identifier: string;
     password: string;
     role: 'PATIENT' | 'CAREGIVER' | 'DOCTOR';
     region?: string;
-  }) => Promise<{ success: boolean; error?: string; role?: string }>;
+  }) => Promise<{ success: boolean; error?: string; role?: string; user?: AuthUser }>;
   logout: () => void;
 }
 
@@ -78,7 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json();
       if (data.success && data.user) {
         saveSession(data.user);
-        return { success: true, role: data.user.role };
+        return { success: true, role: data.user.role, user: data.user };
       }
       return { success: false, error: data.error || 'Login failed.' };
     } catch {
@@ -111,7 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json();
       if (data.success && data.user) {
         saveSession(data.user);
-        return { success: true, role: data.user.role };
+        return { success: true, role: data.user.role, user: data.user };
       }
       return { success: false, error: data.error || 'Signup failed.' };
     } catch {

@@ -90,7 +90,16 @@ export function RegisterPatientModal({
       const createdPatient: PatientProfile = data.patient;
 
       // Save to local offline store so kiosk and local views immediately resolve
+      offlineDb.savePatient(createdPatient, user?.id);
       offlineDb.savePatient(createdPatient);
+      if (user?.id) {
+        try {
+          const prev = localStorage.getItem(`sevamitr_cached_patients_${user.id}`);
+          const list = prev ? JSON.parse(prev) : [];
+          list.unshift(createdPatient);
+          localStorage.setItem(`sevamitr_cached_patients_${user.id}`, JSON.stringify(list));
+        } catch {}
+      }
 
       setSuccess(true);
       setTimeout(() => {

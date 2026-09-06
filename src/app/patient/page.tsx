@@ -23,7 +23,11 @@ import {
   Compass,
   Bell,
   Eye,
+  UserPlus,
+  Loader2,
 } from 'lucide-react';
+import confetti from 'canvas-confetti';
+import { brainHqAudio } from '@/lib/audio/brainHqAudio';
 import { offlineDb, PatientProfile, DEFAULT_PATIENT } from '@/lib/db/offlineDb';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { useAuth } from '@/lib/auth/AuthContext';
@@ -32,19 +36,167 @@ import { DoctorReportModal } from '@/components/DoctorReportModal';
 export default function PatientHomePage() {
   const { user, isLoggedIn, isLoading } = useAuth();
   const router = useRouter();
-  const [patient, setPatient] = useState<PatientProfile>(DEFAULT_PATIENT);
+  const [patient, setPatient] = useState<PatientProfile | null>(null);
+  const [checkingPatient, setCheckingPatient] = useState(true);
   const [mounted, setMounted] = useState(false);
   const { language, t } = useLanguage();
   const [activeNav, setActiveNav] = useState<'games' | 'kiosk'>('games');
   const [showDoctorModal, setShowDoctorModal] = useState<boolean>(false);
 
+  // Add Patient Form state
+  const [formName, setFormName] = useState('');
+  const [formAge, setFormAge] = useState<number | ''>(72);
+  const [formGender, setFormGender] = useState<'Female' | 'Male' | 'Other'>('Female');
+  const [formRegion, setFormRegion] = useState('Kamrup Rural, Assam');
+  const [formLanguage, setFormLanguage] = useState<'as' | 'bn' | 'hi' | 'en'>('en');
+  const [formStage, setFormStage] = useState<'MCI' | 'Mild' | 'Moderate'>('Mild');
+  const [formEmergency, setFormEmergency] = useState('+91 94350 12345');
+  const [formError, setFormError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   useEffect(() => {
     setMounted(true);
-    setPatient(offlineDb.getPatient());
     if (!isLoading && !isLoggedIn) {
       router.push('/');
+      return;
     }
-  }, [isLoading, isLoggedIn, router]);
+
+    if (isLoggedIn && user) {
+      if (user.region) {
+        setFormRegion(user.region);
+      }
+      if (user.identifier && user.identifier.startsWith('+')) {
+        setFormEmergency(user.identifier);
+      }
+
+      // 1. If user is demo patient or has PATIENT role
+      if (user.role === 'PATIENT' || user.identifier === 'bhaben') {
+        const p = offlineDb.getPatient() || DEFAULT_PATIENT;
+        setPatient(p);
+        setCheckingPatient(false);
+        return;
+      }
+
+      // 2. If demo caregiver
+      if (user.id === 'demo-caregiver-001') {
+        setPatient(DEFAULT_PATIENT);
+        setCheckingPatient(false);
+        return;
+      }
+
+      // 3. Check locally saved patient for this caregiver
+      const scoped = offlineDb.getPatient(user.id);
+      if (scoped) {
+        setPatient(scoped);
+        setCheckingPatient(false);
+        return;
+      }
+
+      // 4. Check cached patients in localStorage
+      try {
+        const cached = localStorage.getItem(`sevamitr_cached_patients_${user.id}`);
+        if (cached) {
+          const list = JSON.parse(cached);
+          if (Array.isArray(list) && list.length > 0) {
+            setPatient(list[0]);
+            offlineDb.savePatient(list[0], user.id);
+            setCheckingPatient(false);
+            return;
+          }
+        }
+      } catch {}
+
+      // 5. Fetch scoped patient from API
+      fetch(`/api/patients?caregiverId=${encodeURIComponent(user.id)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.patients && Array.isArray(data.patients) && data.patients.length > 0) {
+            const first = data.patients[0];
+            setPatient(first);
+            offlineDb.savePatient(first, user.id);
+          } else {
+            setPatient(null);
+          }
+        })
+        .catch(() => {
+          setPatient(null);
+        })
+        .finally(() => {
+          setCheckingPatient(false);
+        });
+    }
+  }, [isLoading, isLoggedIn, user, router]);
+
+  const handleQuickFillDemo = () => {
+    setFormName('Bhaben Baruah');
+    setFormAge(74);
+    setFormGender('Male');
+    setFormRegion('Tezpur, Sonitpur, Assam');
+    setFormLanguage('as');
+    setFormStage('Mild');
+    setFormEmergency('+91 94350 98765');
+  };
+
+  const handleAddPatientSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError('');
+
+    if (!formName.trim()) {
+      setFormError('Please enter the patient’s full name.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const payload = {
+        fullName: formName.trim(),
+        age: typeof formAge === 'number' ? formAge : 70,
+        gender: formGender,
+        region: formRegion.trim() || 'Assam, North Eastern Region',
+        primaryLanguage: formLanguage,
+        dementiaStage: formStage,
+        emergencyContact: formEmergency.trim() || user?.identifier || '+91 94350 00000',
+        caregiverId: user?.id || `cg-${user?.identifier || Date.now()}`,
+        caregiverName: user?.fullName || 'Primary Caregiver',
+        caregiverPhone: user?.identifier || formEmergency.trim(),
+      };
+
+      const res = await fetch('/api/patients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to register patient.');
+      }
+
+      const createdPatient: PatientProfile = data.patient;
+
+      offlineDb.savePatient(createdPatient, user?.id);
+      offlineDb.savePatient(createdPatient);
+      if (user?.id) {
+        try {
+          const prev = localStorage.getItem(`sevamitr_cached_patients_${user.id}`);
+          const list = prev ? JSON.parse(prev) : [];
+          list.unshift(createdPatient);
+          localStorage.setItem(`sevamitr_cached_patients_${user.id}`, JSON.stringify(list));
+        } catch {}
+      }
+
+      brainHqAudio.playSuccessChime();
+      confetti({ particleCount: 75, spread: 60, origin: { y: 0.6 } });
+      setPatient(createdPatient);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'An unexpected error occurred.';
+      setFormError(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   // Silent background prefetch for Doctor Report so clicking it opens instantly (0ms)
   useEffect(() => {
@@ -140,7 +292,7 @@ export default function PatientHomePage() {
     },
   ];
 
-  const firstName = (patient?.fullName ? patient.fullName.split(' ')[0] : 'Mridula');
+  const firstName = (patient?.fullName ? patient.fullName.split(' ')[0] : 'Patient');
 
   // Auth restriction guard for logged-out visitors
   if (!mounted || isLoading || !isLoggedIn) {
@@ -229,6 +381,444 @@ export default function PatientHomePage() {
             <span>Return to Log In</span>
             <ArrowRight size={16} />
           </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // 1. Loading state while checking patient profile
+  if (checkingPatient) {
+    return (
+      <div
+        style={{
+          minHeight: 'calc(100vh - 74px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#f4f7f4',
+          padding: '2rem',
+        }}
+      >
+        <div style={{ textAlign: 'center' }}>
+          <div
+            style={{
+              width: '44px',
+              height: '44px',
+              border: '3px solid #c9dcd0',
+              borderTopColor: '#214935',
+              borderRadius: '50%',
+              animation: 'spin 0.8s linear infinite',
+              margin: '0 auto 1rem',
+            }}
+          />
+          <p className="font-clash-medium" style={{ color: '#57534e', fontSize: '0.95rem' }}>
+            Loading patient profile...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. IF LOGGED IN BUT NO PATIENT ADDED YET -> SHOW SCREEN TO ADD PATIENTS RATHER THAN THE GAMES
+  if (!patient) {
+    return (
+      <div
+        style={{
+          minHeight: 'calc(100vh - 74px)',
+          background: '#f4f7f4',
+          padding: '2rem 1.25rem 5rem',
+          boxSizing: 'border-box',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}
+      >
+        <div style={{ maxWidth: '640px', width: '100%' }}>
+          {/* Welcome / Registration Header Card */}
+          <div
+            className="neo-card"
+            style={{
+              background: '#ffffff',
+              padding: '2.25rem 1.75rem',
+              textAlign: 'center',
+              marginBottom: '1.75rem',
+            }}
+          >
+            <div
+              style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '18px',
+                background: '#e8f5e9',
+                border: '2px solid #1c1b1b',
+                boxShadow: '3px 3px 0px #1c1b1b',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#214935',
+                margin: '0 auto 1.25rem',
+              }}
+            >
+              <UserPlus size={32} />
+            </div>
+
+            <div style={{ display: 'inline-flex', marginBottom: '0.75rem' }}>
+              <span
+                className="neo-pill font-clash-wide"
+                style={{
+                  background: '#214935',
+                  color: '#ffffff',
+                  fontSize: '0.72rem',
+                  padding: '0.35rem 0.85rem',
+                  letterSpacing: '0.05em',
+                }}
+              >
+                PATIENT REGISTRATION REQUIRED
+              </span>
+            </div>
+
+            <h1
+              className="font-clash-bold"
+              style={{
+                fontSize: 'clamp(1.5rem, 3.5vw, 1.95rem)',
+                color: '#1c1b1b',
+                margin: '0 0 0.5rem',
+                textTransform: 'uppercase',
+                lineHeight: 1.15,
+              }}
+            >
+              Add a Patient to Start Games
+            </h1>
+
+            <p
+              className="font-clash-regular"
+              style={{
+                fontSize: '0.95rem',
+                color: '#57534e',
+                maxWidth: '500px',
+                margin: '0 auto',
+                lineHeight: 1.5,
+              }}
+            >
+              Welcome, <strong>{user?.fullName || 'Caregiver'}</strong>. You haven&apos;t added any patient yet. Register the elder or loved one under your care to unlock the cognitive games and personalized speed trials.
+            </p>
+          </div>
+
+          {/* Patient Form Card */}
+          <div
+            className="neo-card"
+            style={{
+              background: '#ffffff',
+              padding: '2rem 1.75rem',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1.5rem',
+                flexWrap: 'wrap',
+                gap: '0.75rem',
+                borderBottom: '1px solid #e7e5e4',
+                paddingBottom: '1rem',
+              }}
+            >
+              <div>
+                <h2
+                  className="font-clash-bold"
+                  style={{ fontSize: '1.2rem', color: '#1c1b1b', margin: 0, textTransform: 'uppercase' }}
+                >
+                  Patient Details
+                </h2>
+                <span className="font-clash-regular" style={{ fontSize: '0.82rem', color: '#78716c' }}>
+                  Stored securely &amp; available 100% offline
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleQuickFillDemo}
+                className="neo-pill font-clash-semibold"
+                style={{
+                  background: '#fef3c7',
+                  border: '1.5px solid #1c1b1b',
+                  color: '#92400e',
+                  fontSize: '0.78rem',
+                  padding: '0.35rem 0.75rem',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                }}
+              >
+                <Sparkles size={14} />
+                <span>Prefill Sample (Assam)</span>
+              </button>
+            </div>
+
+            {formError && (
+              <div
+                className="neo-card font-clash-medium"
+                style={{
+                  background: '#fef2f2',
+                  border: '2px solid #ef4444',
+                  color: '#991b1b',
+                  padding: '0.75rem 1rem',
+                  fontSize: '0.88rem',
+                  marginBottom: '1.25rem',
+                }}
+              >
+                {formError}
+              </div>
+            )}
+
+            <form onSubmit={handleAddPatientSubmit}>
+              {/* Full Name */}
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label
+                  className="font-clash-bold"
+                  style={{ display: 'block', fontSize: '0.85rem', color: '#1c1b1b', marginBottom: '0.45rem', textTransform: 'uppercase' }}
+                >
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Bhaben Baruah or Nilima Devi"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 1rem',
+                    borderRadius: '10px',
+                    border: '2px solid #1c1b1b',
+                    fontSize: '0.95rem',
+                    boxSizing: 'border-box',
+                    background: '#fcfbf9',
+                  }}
+                />
+              </div>
+
+              {/* Age & Gender */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.3fr', gap: '1rem', marginBottom: '1.25rem' }}>
+                <div>
+                  <label
+                    className="font-clash-bold"
+                    style={{ display: 'block', fontSize: '0.85rem', color: '#1c1b1b', marginBottom: '0.45rem', textTransform: 'uppercase' }}
+                  >
+                    Age
+                  </label>
+                  <input
+                    type="number"
+                    min={45}
+                    max={120}
+                    value={formAge}
+                    onChange={(e) => setFormAge(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem 1rem',
+                      borderRadius: '10px',
+                      border: '2px solid #1c1b1b',
+                      fontSize: '0.95rem',
+                      boxSizing: 'border-box',
+                      background: '#fcfbf9',
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    className="font-clash-bold"
+                    style={{ display: 'block', fontSize: '0.85rem', color: '#1c1b1b', marginBottom: '0.45rem', textTransform: 'uppercase' }}
+                  >
+                    Gender
+                  </label>
+                  <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    {(['Female', 'Male', 'Other'] as const).map((g) => (
+                      <button
+                        key={g}
+                        type="button"
+                        onClick={() => setFormGender(g)}
+                        style={{
+                          flex: 1,
+                          padding: '0.75rem 0.35rem',
+                          borderRadius: '10px',
+                          border: '2px solid #1c1b1b',
+                          background: formGender === g ? '#214935' : '#ffffff',
+                          color: formGender === g ? '#ffffff' : '#1c1b1b',
+                          fontWeight: 600,
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                          textAlign: 'center',
+                        }}
+                      >
+                        {g}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Region */}
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label
+                  className="font-clash-bold"
+                  style={{ display: 'block', fontSize: '0.85rem', color: '#1c1b1b', marginBottom: '0.45rem', textTransform: 'uppercase' }}
+                >
+                  Region / District (North Eastern Region)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Kamrup Rural, Assam"
+                  value={formRegion}
+                  onChange={(e) => setFormRegion(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 1rem',
+                    borderRadius: '10px',
+                    border: '2px solid #1c1b1b',
+                    fontSize: '0.95rem',
+                    boxSizing: 'border-box',
+                    background: '#fcfbf9',
+                  }}
+                />
+              </div>
+
+              {/* Primary Language */}
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label
+                  className="font-clash-bold"
+                  style={{ display: 'block', fontSize: '0.85rem', color: '#1c1b1b', marginBottom: '0.45rem', textTransform: 'uppercase' }}
+                >
+                  Primary Language
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }}>
+                  {[
+                    { key: 'en', label: 'English' },
+                    { key: 'as', label: 'অসমীয়া (Assamese)' },
+                    { key: 'bn', label: 'বাংলা (Bengali)' },
+                    { key: 'hi', label: 'हिन्दी (Hindi)' },
+                  ].map((l) => (
+                    <button
+                      key={l.key}
+                      type="button"
+                      onClick={() => setFormLanguage(l.key as any)}
+                      style={{
+                        padding: '0.65rem 0.75rem',
+                        borderRadius: '10px',
+                        border: '2px solid #1c1b1b',
+                        background: formLanguage === l.key ? '#214935' : '#ffffff',
+                        color: formLanguage === l.key ? '#ffffff' : '#1c1b1b',
+                        fontWeight: 600,
+                        fontSize: '0.88rem',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                      }}
+                    >
+                      {l.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Dementia Stage */}
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label
+                  className="font-clash-bold"
+                  style={{ display: 'block', fontSize: '0.85rem', color: '#1c1b1b', marginBottom: '0.45rem', textTransform: 'uppercase' }}
+                >
+                  Dementia Stage / Cognitive Assessment
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
+                  {[
+                    { key: 'MCI', label: 'MCI', sub: 'Early Signs' },
+                    { key: 'Mild', label: 'Mild', sub: 'Recommended' },
+                    { key: 'Moderate', label: 'Moderate', sub: 'Assisted' },
+                  ].map((s) => (
+                    <button
+                      key={s.key}
+                      type="button"
+                      onClick={() => setFormStage(s.key as any)}
+                      style={{
+                        padding: '0.65rem 0.5rem',
+                        borderRadius: '10px',
+                        border: '2px solid #1c1b1b',
+                        background: formStage === s.key ? '#214935' : '#ffffff',
+                        color: formStage === s.key ? '#ffffff' : '#1c1b1b',
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                      }}
+                    >
+                      <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{s.label}</div>
+                      <div style={{ fontSize: '0.72rem', opacity: formStage === s.key ? 0.9 : 0.7 }}>{s.sub}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Emergency Contact Phone */}
+              <div style={{ marginBottom: '1.75rem' }}>
+                <label
+                  className="font-clash-bold"
+                  style={{ display: 'block', fontSize: '0.85rem', color: '#1c1b1b', marginBottom: '0.45rem', textTransform: 'uppercase' }}
+                >
+                  Emergency / Caregiver Contact Phone
+                </label>
+                <input
+                  type="tel"
+                  placeholder="+91 94350 12345"
+                  value={formEmergency}
+                  onChange={(e) => setFormEmergency(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 1rem',
+                    borderRadius: '10px',
+                    border: '2px solid #1c1b1b',
+                    fontSize: '0.95rem',
+                    boxSizing: 'border-box',
+                    background: '#fcfbf9',
+                  }}
+                />
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="neo-pill font-clash-bold"
+                style={{
+                  width: '100%',
+                  background: '#214935',
+                  color: '#ffffff',
+                  border: '2px solid #1c1b1b',
+                  boxShadow: '3px 3px 0px #1c1b1b',
+                  padding: '0.95rem 1.5rem',
+                  fontSize: '1.05rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.02em',
+                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.65rem',
+                  transition: 'transform 0.1s ease',
+                }}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 size={20} className="animate-spin" />
+                    <span>Registering Patient...</span>
+                  </>
+                ) : (
+                  <>
+                    <UserPlus size={20} />
+                    <span>Save Patient &amp; Start Games</span>
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     );

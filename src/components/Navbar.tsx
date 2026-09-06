@@ -17,16 +17,30 @@ export function Navbar() {
   const { user, isLoggedIn, logout } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [patientPhone, setPatientPhone] = useState('+919435098765');
-  const [patientName, setPatientName] = useState('Mridula');
+  const [patientName, setPatientName] = useState('');
 
   useEffect(() => {
     setMounted(true);
-    const patient = offlineDb.getPatient();
-    if (patient) {
-      setPatientPhone(patient.caregiverPhone || '+919435098765');
-      setPatientName(patient.fullName ? patient.fullName.split(' ')[0] : 'Mridula');
+    if (!user) {
+      setPatientName('');
+      return;
     }
-  }, []);
+    if (user.role === 'PATIENT' || user.id === 'demo-caregiver-001') {
+      const patient = offlineDb.getPatient();
+      if (patient) {
+        setPatientPhone(patient.caregiverPhone || '+919435098765');
+        setPatientName(patient.fullName ? patient.fullName.split(' ')[0] : 'Mridula');
+      }
+    } else {
+      const scoped = offlineDb.getPatient(user.id);
+      if (scoped) {
+        setPatientPhone(scoped.caregiverPhone || '+919435098765');
+        setPatientName(scoped.fullName ? scoped.fullName.split(' ')[0] : '');
+      } else {
+        setPatientName('');
+      }
+    }
+  }, [user]);
 
   const isPatientArea = pathname.startsWith('/patient');
   const isCaregiverArea = pathname.startsWith('/caregiver');
@@ -196,7 +210,7 @@ export function Navbar() {
                 }
               >
                 {isPatientArea || user.role === 'PATIENT' ? <User size={15} /> : <Stethoscope size={15} />}
-                <span>{isPatientArea ? (patientName || 'Mridula') : user.fullName.split(' ')[0]}</span>
+                <span>{isPatientArea ? (patientName || (user.fullName ? user.fullName.split(' ')[0] : 'Patient')) : user.fullName.split(' ')[0]}</span>
               </span>
 
               <button

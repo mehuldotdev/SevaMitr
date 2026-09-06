@@ -166,6 +166,55 @@ class OfflineStorageEngine {
     }
   }
 
+  hasPatient(caregiverId?: string): boolean {
+    if (!caregiverId || caregiverId === 'demo-caregiver-001') return true;
+    if (!this.isBrowser()) return false;
+    try {
+      const scoped = localStorage.getItem(`${STORAGE_KEYS.PATIENT}_${caregiverId}`);
+      if (scoped) return true;
+      const cached = localStorage.getItem(`sevamitr_cached_patients_${caregiverId}`);
+      if (cached) {
+        const list = JSON.parse(cached);
+        if (Array.isArray(list) && list.length > 0) return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
+  deletePatient(patientId: string, caregiverId?: string): void {
+    if (!this.isBrowser()) return;
+    try {
+      if (caregiverId) {
+        localStorage.removeItem(`${STORAGE_KEYS.PATIENT}_${caregiverId}`);
+        const cached = localStorage.getItem(`sevamitr_cached_patients_${caregiverId}`);
+        if (cached) {
+          const list = JSON.parse(cached);
+          if (Array.isArray(list)) {
+            const updated = list.filter((p: PatientProfile) => p.id !== patientId);
+            localStorage.setItem(`sevamitr_cached_patients_${caregiverId}`, JSON.stringify(updated));
+            if (updated.length > 0) {
+              localStorage.setItem(`${STORAGE_KEYS.PATIENT}_${caregiverId}`, JSON.stringify(updated[0]));
+              localStorage.setItem(STORAGE_KEYS.PATIENT, JSON.stringify(updated[0]));
+            } else {
+              localStorage.removeItem(STORAGE_KEYS.PATIENT);
+            }
+          }
+        }
+      }
+      const stored = localStorage.getItem(STORAGE_KEYS.PATIENT);
+      if (stored) {
+        const p = JSON.parse(stored);
+        if (p.id === patientId) {
+          localStorage.removeItem(STORAGE_KEYS.PATIENT);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to delete patient locally', e);
+    }
+  }
+
   // Sessions
   getSessions(patientId?: string): CognitiveSessionRecord[] {
     if (!this.isBrowser()) return [];

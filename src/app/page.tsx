@@ -7,6 +7,7 @@ import { ArrowRight, LogIn, UserPlus, User, Stethoscope, CheckCircle2 } from 'lu
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { SevaMitrIcon } from '@/components/SevaMitrIcon';
+import { offlineDb } from '@/lib/db/offlineDb';
 
 function HomeAuthContent() {
   const router = useRouter();
@@ -42,7 +43,12 @@ function HomeAuthContent() {
       if (res.role === 'PATIENT') {
         router.push('/patient');
       } else {
-        router.push('/caregiver');
+        const hasPatient = res.user?.id ? offlineDb.hasPatient(res.user.id) : false;
+        if (!hasPatient && res.user?.id !== 'demo-caregiver-001') {
+          router.push('/patient');
+        } else {
+          router.push('/caregiver');
+        }
       }
     } else {
       setErrorMsg(res.error || 'Login failed. Please check credentials.');
@@ -64,7 +70,7 @@ function HomeAuthContent() {
     setLoading(false);
 
     if (res.success) {
-      router.push('/caregiver');
+      router.push('/patient');
     } else {
       setErrorMsg(res.error || 'Sign up failed.');
     }
