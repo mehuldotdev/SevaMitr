@@ -100,6 +100,8 @@ export default function DoubleDecisionGame() {
   const errorCountRef = useRef<number>(0);
   const correctCountRef = useRef<number>(0);
   const totalDurationStartRef = useRef<number>(Date.now());
+  const thresholdsRef = useRef<number[]>([]);
+  const exposureMsRef = useRef<number>(450);
 
   useEffect(() => {
     const handleFsChange = () => {
@@ -124,10 +126,6 @@ export default function DoubleDecisionGame() {
     }
     router.push('/patient');
   };
-
-  // Current pair items
-  const currentPair = centerPairs[currentPairIndex] || centerPairs[0];
-  const centerTarget = currentPair[centerTargetIndex];
 
   // Start trial
   const launchTrial = () => {
@@ -155,7 +153,7 @@ export default function DoubleDecisionGame() {
       setTimeout(() => {
         setPhase('CENTER_INPUT');
       }, 90); // 90ms visual masking
-    }, exposureMs);
+    }, exposureMsRef.current);
   };
 
   // Center target selection
@@ -174,19 +172,25 @@ export default function DoubleDecisionGame() {
     setLastTrialSuccess(isSuccess);
     setPhase('FEEDBACK');
 
+    const currentExp = exposureMsRef.current;
     if (isSuccess) {
       brainHqAudio.playSuccessChime();
       correctCountRef.current += 1;
       setScore(Math.round((correctCountRef.current / maxTrials) * 100));
-      setThresholdsAchieved((prev) => [...prev, exposureMs]);
+      thresholdsRef.current.push(currentExp);
+      setThresholdsAchieved((prev) => [...prev, currentExp]);
 
       // Adaptive Staircase: Speed increases (exposure drops)
-      setExposureMs((prev) => Math.max(60, Math.round(prev * 0.78)));
+      const nextExp = Math.max(60, Math.round(currentExp * 0.78));
+      exposureMsRef.current = nextExp;
+      setExposureMs(nextExp);
     } else {
       brainHqAudio.playGentleError();
       errorCountRef.current += 1;
       // Adaptive Staircase: Slow down slightly to accommodate patient
-      setExposureMs((prev) => Math.min(650, Math.round(prev * 1.25)));
+      const nextExp = Math.min(650, Math.round(currentExp * 1.25));
+      exposureMsRef.current = nextExp;
+      setExposureMs(nextExp);
     }
 
     // Move to next trial or finish
@@ -203,8 +207,9 @@ export default function DoubleDecisionGame() {
   const finishGame = () => {
     setPhase('COMPLETE');
     const totalDurationSec = Math.round((Date.now() - totalDurationStartRef.current) / 1000);
+    const achieved = thresholdsRef.current.length > 0 ? thresholdsRef.current : thresholdsAchieved;
     const bestThreshold =
-      thresholdsAchieved.length > 0 ? Math.min(...thresholdsAchieved) : exposureMs;
+      achieved.length > 0 ? Math.min(...achieved) : exposureMsRef.current;
 
     const { score: calibratedScore, biomarker } = scoreDoubleDecision(
       correctCountRef.current,
@@ -230,6 +235,10 @@ export default function DoubleDecisionGame() {
       timeOfDay: new Date().getHours() >= 5 && new Date().getHours() < 13 ? 'morning' : 'evening',
     });
   };
+
+  // Current pair items
+  const currentPair = centerPairs[currentPairIndex] || centerPairs[0];
+  const centerTarget = currentPair[centerTargetIndex];
 
   // Radius for peripheral ring in px
   const ringRadius = 110;

@@ -56,7 +56,7 @@ const STORAGE_KEYS = {
 
 // Initial default demo patient rooted in Assam / NER
 export const DEFAULT_PATIENT: PatientProfile = {
-  id: '56ce0682-87de-4210-8229-b6a216395dd1',
+  id: 'patient-ner-001',
   fullName: 'Mridula Hazarika',
   age: 72,
   gender: 'Female',
@@ -231,6 +231,23 @@ class OfflineStorageEngine {
       }
 
       if (patientId) {
+        const isDefault =
+          patientId === 'patient-ner-001' ||
+          patientId === '56ce0682-87de-4210-8229-b6a216395dd1' ||
+          patientId === DEFAULT_PATIENT.id;
+
+        if (isDefault) {
+          const defaultList = list.filter(
+            (s) =>
+              !s.patientId ||
+              s.patientId === 'patient-ner-001' ||
+              s.patientId === '56ce0682-87de-4210-8229-b6a216395dd1' ||
+              s.patientId === DEFAULT_PATIENT.id
+          );
+          if (defaultList.length > 0) return defaultList;
+          return list;
+        }
+
         const filtered = list.filter((s) => s.patientId === patientId);
         if (filtered.length > 0) return filtered;
         // Fallback: If sessions were recorded under another/default ID, return list so progress is preserved
@@ -255,6 +272,11 @@ class OfflineStorageEngine {
         const sessions = this.getSessions();
         sessions.unshift(fullSession);
         this.saveAllSessions(sessions);
+
+        // Dispatch event for instant UI update across dashboards & sync engine
+        try {
+          window.dispatchEvent(new CustomEvent('sevamitr_session_saved', { detail: fullSession }));
+        } catch {}
 
         // Automatic background sync to SQLite database
         const patient = this.getPatient();

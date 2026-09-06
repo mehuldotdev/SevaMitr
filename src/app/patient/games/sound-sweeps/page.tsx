@@ -46,6 +46,8 @@ export default function SoundSweepsGame() {
   const errorCountRef = useRef<number>(0);
   const correctCountRef = useRef<number>(0);
   const totalDurationStartRef = useRef<number>(Date.now());
+  const thresholdsRef = useRef<number[]>([]);
+  const isiMsRef = useRef<number>(300);
 
   useEffect(() => {
     const handleFsChange = () => {
@@ -80,7 +82,7 @@ export default function SoundSweepsGame() {
     setState('PLAYING_AUDIO');
 
     // Play sweeps sequentially with current ISI gap
-    await brainHqAudio.playSequentialSweeps(nextPattern.s1, nextPattern.s2, isiMs);
+    await brainHqAudio.playSequentialSweeps(nextPattern.s1, nextPattern.s2, isiMsRef.current);
 
     setState('USER_INPUT');
   };
@@ -91,19 +93,25 @@ export default function SoundSweepsGame() {
     setIsCorrect(correct);
     setState('FEEDBACK');
 
+    const currentIsi = isiMsRef.current;
     if (correct) {
       brainHqAudio.playSuccessChime();
       correctCountRef.current += 1;
       setScore(Math.round((correctCountRef.current / maxTrials) * 100));
-      setThresholdsAchieved((prev) => [...prev, isiMs]);
+      thresholdsRef.current.push(currentIsi);
+      setThresholdsAchieved((prev) => [...prev, currentIsi]);
 
       // Psychophysics 2-down 1-up staircase: make the temporal gap tighter (faster processing)
-      setIsiMs((prev) => Math.max(50, Math.round(prev * 0.75)));
+      const nextIsi = Math.max(50, Math.round(currentIsi * 0.75));
+      isiMsRef.current = nextIsi;
+      setIsiMs(nextIsi);
     } else {
       brainHqAudio.playGentleError();
       errorCountRef.current += 1;
       // Lengthen gap to give brain more auditory temporal resolution
-      setIsiMs((prev) => Math.min(500, Math.round(prev * 1.25)));
+      const nextIsi = Math.min(500, Math.round(currentIsi * 1.25));
+      isiMsRef.current = nextIsi;
+      setIsiMs(nextIsi);
     }
 
     setTimeout(() => {
@@ -119,7 +127,8 @@ export default function SoundSweepsGame() {
   const finishGame = () => {
     setState('COMPLETE');
     const totalDurationSec = Math.round((Date.now() - totalDurationStartRef.current) / 1000);
-    const bestThreshold = thresholdsAchieved.length > 0 ? Math.min(...thresholdsAchieved) : isiMs;
+    const achieved = thresholdsRef.current.length > 0 ? thresholdsRef.current : thresholdsAchieved;
+    const bestThreshold = achieved.length > 0 ? Math.min(...achieved) : isiMsRef.current;
 
     const { score: calibratedScore, biomarker } = scoreSoundSweeps(
       correctCountRef.current,
@@ -147,7 +156,7 @@ export default function SoundSweepsGame() {
 
   const replayCurrent = async () => {
     setState('PLAYING_AUDIO');
-    await brainHqAudio.playSequentialSweeps(currentPattern.s1, currentPattern.s2, isiMs);
+    await brainHqAudio.playSequentialSweeps(currentPattern.s1, currentPattern.s2, isiMsRef.current);
     setState('USER_INPUT');
   };
 

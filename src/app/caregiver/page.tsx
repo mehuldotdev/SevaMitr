@@ -141,18 +141,37 @@ export default function CaregiverDashboardPage() {
     }
   };
 
-  const doubleDecisionSessions = sessions.filter((s) => s.gameId === 'double_decision');
-  const soundSweepsSessions = sessions.filter((s) => s.gameId === 'sound_sweeps');
-  const targetTrackerSessions = sessions.filter((s) => s.gameId === 'target_tracker');
+  const normId = (id?: string) => (id || '').toLowerCase().replace(/[-_]/g, '');
 
-  const bestVisualSpeed =
+  const sortedSessions = [...sessions].sort(
+    (a, b) => (b.timestamp || 0) - (a.timestamp || 0)
+  );
+
+  const doubleDecisionSessions = sortedSessions.filter(
+    (s) => normId(s.gameId) === 'doubledecision'
+  );
+  const soundSweepsSessions = sortedSessions.filter(
+    (s) => normId(s.gameId) === 'soundsweeps'
+  );
+  const targetTrackerSessions = sortedSessions.filter(
+    (s) => normId(s.gameId) === 'targettracker'
+  );
+  const bijuliSessions = sortedSessions.filter(
+    (s) => normId(s.gameId) === 'bijulitap'
+  );
+
+  // Latest visual speed from most recent UFOV / reaction speed trial
+  const latestVisualSpeed =
     doubleDecisionSessions.length > 0
-      ? Math.min(...doubleDecisionSessions.map((s) => s.hesitationMs))
+      ? Math.round(doubleDecisionSessions[0].hesitationMs)
+      : bijuliSessions.length > 0
+      ? Math.round(bijuliSessions[0].hesitationMs)
       : null;
 
-  const bestAuditoryIsi =
+  // Latest auditory ISI from most recent pitch sweeps trial
+  const latestAuditoryIsi =
     soundSweepsSessions.length > 0
-      ? Math.min(...soundSweepsSessions.map((s) => s.hesitationMs))
+      ? Math.round(soundSweepsSessions[0].hesitationMs)
       : null;
 
   const targetAccuracy =
@@ -175,8 +194,8 @@ export default function CaregiverDashboardPage() {
         body: JSON.stringify({
           patient,
           telemetry: {
-            sightSpeedMs: bestVisualSpeed ?? undefined,
-            soundSweepsMs: bestAuditoryIsi ?? undefined,
+            sightSpeedMs: latestVisualSpeed ?? undefined,
+            soundSweepsMs: latestAuditoryIsi ?? undefined,
             targetTrackerScore: targetAccuracy ?? undefined,
             hesitationMs: sessions.length > 0 ? Math.round(sessions.reduce((acc, s) => acc + s.hesitationMs, 0) / sessions.length) : undefined,
             sessionsCount: sessions.length,
@@ -188,7 +207,7 @@ export default function CaregiverDashboardPage() {
     }, 1200);
 
     return () => clearTimeout(timer);
-  }, [mounted, patient, bestVisualSpeed, bestAuditoryIsi, targetAccuracy, sessions.length, analysis.sundowning.latencyDivergencePct]);
+  }, [mounted, patient, latestVisualSpeed, latestAuditoryIsi, targetAccuracy, sessions.length, analysis.sundowning.latencyDivergencePct]);
 
   if (!mounted || isLoading || !isLoggedIn || user?.role === 'PATIENT') {
     return (
@@ -695,7 +714,7 @@ export default function CaregiverDashboardPage() {
                   </span>
                 </div>
                 <div className="font-clash-metric" style={{ fontSize: '2.1rem', color: '#1c1b1b', margin: '0.35rem 0 0.15rem' }}>
-                  {bestVisualSpeed !== null ? `${bestVisualSpeed}` : '--'}
+                  {latestVisualSpeed !== null ? `${latestVisualSpeed}` : '--'}
                   <span style={{ fontSize: '0.95rem', color: '#57534e', fontWeight: 500 }}> ms</span>
                 </div>
                 <div className="font-clash-regular" style={{ fontSize: '0.82rem', color: '#57534e', fontWeight: 400 }}>
@@ -717,7 +736,7 @@ export default function CaregiverDashboardPage() {
                   </span>
                 </div>
                 <div className="font-clash-metric" style={{ fontSize: '2.1rem', color: '#1c1b1b', margin: '0.35rem 0 0.15rem' }}>
-                  {bestAuditoryIsi !== null ? `${bestAuditoryIsi}` : '--'}
+                  {latestAuditoryIsi !== null ? `${latestAuditoryIsi}` : '--'}
                   <span style={{ fontSize: '0.95rem', color: '#57534e', fontWeight: 500 }}> ms</span>
                 </div>
                 <div className="font-clash-regular" style={{ fontSize: '0.82rem', color: '#57534e', fontWeight: 400 }}>
@@ -925,8 +944,8 @@ export default function CaregiverDashboardPage() {
           onClose={() => setShowDoctorReport(false)}
           patient={patient}
           telemetry={{
-            sightSpeedMs: bestVisualSpeed ?? undefined,
-            soundSweepsMs: bestAuditoryIsi ?? undefined,
+            sightSpeedMs: latestVisualSpeed ?? undefined,
+            soundSweepsMs: latestAuditoryIsi ?? undefined,
             targetTrackerScore: targetAccuracy ?? undefined,
             hesitationMs: sessions.length > 0 ? Math.round(sessions.reduce((acc, s) => acc + s.hesitationMs, 0) / sessions.length) : undefined,
             sessionsCount: sessions.length,

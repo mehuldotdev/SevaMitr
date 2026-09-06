@@ -34,12 +34,15 @@ export function extractPatientTelemetry(patientId?: string): TelemetryData {
     return { sessionsCount: 0 };
   }
 
-  const doubleDecisionSessions = sessions.filter((s) => s.gameId === 'double_decision');
-  const soundSweepsSessions = sessions.filter((s) => s.gameId === 'sound_sweeps');
-  const targetTrackerSessions = sessions.filter((s) => s.gameId === 'target_tracker');
-  const speedMazeSessions = sessions.filter((s) => s.gameId === 'speed_maze');
-  const bijuliTapSessions = sessions.filter((s) => s.gameId === 'bijuli_tap');
-  const bikhamaSessions = sessions.filter((s) => s.gameId === 'bikhama_khoj');
+  const normId = (id?: string) => (id || '').toLowerCase().replace(/[-_]/g, '');
+  const sorted = [...sessions].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+  const doubleDecisionSessions = sorted.filter((s) => normId(s.gameId) === 'doubledecision');
+  const soundSweepsSessions = sorted.filter((s) => normId(s.gameId) === 'soundsweeps');
+  const targetTrackerSessions = sorted.filter((s) => normId(s.gameId) === 'targettracker');
+  const speedMazeSessions = sorted.filter((s) => normId(s.gameId) === 'speedmaze');
+  const bijuliTapSessions = sorted.filter((s) => normId(s.gameId) === 'bijulitap');
+  const bikhamaSessions = sorted.filter((s) => normId(s.gameId) === 'bikhamakhoj');
 
   const visualPool = [...doubleDecisionSessions, ...bikhamaSessions];
   const sightSpeedMs =
