@@ -15,6 +15,7 @@ const DEMO_ACCOUNTS = [
     id: 'demo-caregiver-001',
     fullName: 'Anuradha Baruah',
     identifier: 'anuradha@sevamitr.org',
+    aliases: ['9435012345', '+919435012345', '+91 94350 12345', 'anuradha'],
     password: 'care123',
     role: 'CAREGIVER',
     region: 'Guwahati, Assam',
@@ -31,6 +32,16 @@ const DEMO_ACCOUNTS = [
 
 export const dynamic = 'force-dynamic';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -41,14 +52,16 @@ export async function POST(req: Request) {
       if (!identifier || !password) {
         return NextResponse.json(
           { success: false, error: 'Please enter your username/email and password.' },
-          { status: 400 }
+          { status: 400, headers: corsHeaders }
         );
       }
 
       // Check demo accounts first
+      const cleanIdent = identifier.trim().toLowerCase();
       const demoMatch = DEMO_ACCOUNTS.find(
         (d) =>
-          d.identifier.toLowerCase() === identifier.toLowerCase() &&
+          (d.identifier.toLowerCase() === cleanIdent ||
+            (d as any).aliases?.some((a: string) => a.toLowerCase() === cleanIdent)) &&
           d.password === password
       );
 
@@ -73,43 +86,49 @@ export async function POST(req: Request) {
           }
         }
 
-        return NextResponse.json({
-          success: true,
-          user: {
-            id: demoMatch.id,
-            fullName: demoMatch.fullName,
-            identifier: demoMatch.identifier,
-            role: demoMatch.role,
-            region: demoMatch.region,
+        return NextResponse.json(
+          {
+            success: true,
+            user: {
+              id: demoMatch.id,
+              fullName: demoMatch.fullName,
+              identifier: demoMatch.identifier,
+              role: demoMatch.role,
+              region: demoMatch.region,
+            },
           },
-        });
+          { headers: corsHeaders }
+        );
       }
 
       // Check database
       if (prisma) {
         try {
           const user = await prisma.user.findUnique({
-            where: { identifier: identifier.trim().toLowerCase() },
+            where: { identifier: cleanIdent },
           });
 
           if (user) {
             if (user.password !== password) {
               return NextResponse.json(
                 { success: false, error: 'Invalid identifier or password. Please try again.' },
-                { status: 401 }
+                { status: 401, headers: corsHeaders }
               );
             }
 
-            return NextResponse.json({
-              success: true,
-              user: {
-                id: user.id,
-                fullName: user.fullName,
-                identifier: user.identifier,
-                role: user.role,
-                region: user.region,
+            return NextResponse.json(
+              {
+                success: true,
+                user: {
+                  id: user.id,
+                  fullName: user.fullName,
+                  identifier: user.identifier,
+                  role: user.role,
+                  region: user.region,
+                },
               },
-            });
+              { headers: corsHeaders }
+            );
           }
         } catch (dbErr) {
           console.warn('Database query warning:', dbErr);
@@ -119,7 +138,7 @@ export async function POST(req: Request) {
       // If user not found in demo or database
       return NextResponse.json(
         { success: false, error: 'Invalid identifier or password. Please check credentials or use demo accounts.' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     }
 
@@ -128,7 +147,7 @@ export async function POST(req: Request) {
       if (!fullName || !identifier || !password) {
         return NextResponse.json(
           { success: false, error: 'Please fill in all required fields.' },
-          { status: 400 }
+          { status: 400, headers: corsHeaders }
         );
       }
 
@@ -140,7 +159,7 @@ export async function POST(req: Request) {
             error:
               'Patients cannot register directly. Please register as a Caregiver or ASHA worker, then add your patient securely from within the Caregiver Dashboard.',
           },
-          { status: 400 }
+          { status: 400, headers: corsHeaders }
         );
       }
 
@@ -157,7 +176,7 @@ export async function POST(req: Request) {
           if (existing) {
             return NextResponse.json(
               { success: false, error: 'An account with this phone/email already exists.' },
-              { status: 409 }
+              { status: 409, headers: corsHeaders }
             );
           }
 
@@ -171,40 +190,46 @@ export async function POST(req: Request) {
             },
           });
 
-          return NextResponse.json({
-            success: true,
-            user: {
-              id: newUser.id,
-              fullName: newUser.fullName,
-              identifier: newUser.identifier,
-              role: newUser.role,
-              region: newUser.region,
+          return NextResponse.json(
+            {
+              success: true,
+              user: {
+                id: newUser.id,
+                fullName: newUser.fullName,
+                identifier: newUser.identifier,
+                role: newUser.role,
+                region: newUser.region,
+              },
             },
-          });
+            { headers: corsHeaders }
+          );
         } catch (err: unknown) {
           console.warn('Signup database error, falling back to local session:', err);
         }
       }
 
       // Fallback if DB is not configured
-      return NextResponse.json({
-        success: true,
-        user: {
-          id: `usr-${Date.now()}`,
-          fullName: fullName.trim(),
-          identifier: cleanIdentifier,
-          role: userRole,
-          region: userRegion,
+      return NextResponse.json(
+        {
+          success: true,
+          user: {
+            id: `usr-${Date.now()}`,
+            fullName: fullName.trim(),
+            identifier: cleanIdentifier,
+            role: userRole,
+            region: userRegion,
+          },
         },
-      });
+        { headers: corsHeaders }
+      );
     }
 
-    return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
+    return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400, headers: corsHeaders });
   } catch (error: unknown) {
     console.error('Auth API error:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }

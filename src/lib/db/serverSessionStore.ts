@@ -65,7 +65,14 @@ export const serverSessionStore = {
 
   getPatientsByCaregiver(caregiverId: string) {
     const all = Array.from(patientMap.values());
-    return all.filter((p) => p.caregiverId === caregiverId || p.caregiverPhone?.includes(caregiverId));
+    const cleanDigits = caregiverId.replace(/[^0-9]/g, '');
+    return all.filter((p) => {
+      if (p.caregiverId === caregiverId) return true;
+      if (p.caregiverPhone?.includes(caregiverId)) return true;
+      if (cleanDigits.length >= 6 && p.caregiverPhone?.replace(/[^0-9]/g, '').includes(cleanDigits)) return true;
+      if (cleanDigits.length >= 6 && p.caregiverId?.includes(cleanDigits)) return true;
+      return false;
+    });
   },
 
   deletePatient(id: string) {

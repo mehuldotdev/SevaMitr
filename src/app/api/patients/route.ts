@@ -61,24 +61,34 @@ export async function GET(req: Request) {
   // Caregiver-scoped query
   if (prisma) {
     try {
-      const whereClause =
-        caregiverId === 'demo-caregiver-001'
-          ? {
-              OR: [
-                { caregiverId: 'demo-caregiver-001' },
-                { caregiverId: 'cg-ner-default' },
-                { caregiverId: { startsWith: 'cg-ner' } },
-              ],
-            }
-          : {
-              OR: [
-                { caregiverId },
-                { caregiver: { phone: { contains: caregiverId } } },
-              ],
-            };
+      let userIdent = caregiverId;
+      try {
+        const u = await prisma.user.findUnique({ where: { id: caregiverId } });
+        if (u) userIdent = u.identifier;
+      } catch (_) {}
+
+      const cleanDigits = userIdent.replace(/[^0-9]/g, '');
+
+      const orConditions: any[] = [
+        { caregiverId },
+        { caregiver: { id: caregiverId } },
+        { caregiver: { phone: { contains: caregiverId } } },
+      ];
+
+      if (cleanDigits.length >= 6) {
+        orConditions.push({ caregiverId: { contains: cleanDigits } });
+        orConditions.push({ caregiver: { phone: { contains: cleanDigits } } });
+        orConditions.push({ emergencyContact: { contains: cleanDigits } });
+      }
+
+      if (caregiverId === 'demo-caregiver-001') {
+        orConditions.push({ caregiverId: 'demo-caregiver-001' });
+        orConditions.push({ caregiverId: 'cg-ner-default' });
+        orConditions.push({ caregiverId: { startsWith: 'cg-ner' } });
+      }
 
       const patients = await prisma.patient.findMany({
-        where: whereClause,
+        where: { OR: orConditions },
         include: { caregiver: true, dailyMetrics: { take: 1, orderBy: { date: 'desc' } } },
         orderBy: { createdAt: 'desc' },
       });
