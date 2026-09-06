@@ -67,8 +67,9 @@ export function CelebrationModal({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '1.5rem',
+        padding: '1rem',
         zIndex: 9999,
+        overflowY: 'auto',
       }}
     >
       <div
@@ -77,10 +78,14 @@ export function CelebrationModal({
           maxWidth: '520px',
           width: '100%',
           textAlign: 'center',
-          padding: '2.5rem 2rem',
+          padding: '2rem 1.5rem',
           borderRadius: '24px',
-          background: 'var(--color-surface)',
-          boxShadow: '0 20px 50px rgba(0,0,0,0.2)',
+          background: 'var(--color-surface, #ffffff)',
+          border: '2px solid var(--color-border, #1c1b1b)',
+          boxShadow: '6px 6px 0px var(--color-border, #1c1b1b), 0 20px 40px rgba(0,0,0,0.12)',
+          boxSizing: 'border-box',
+          maxHeight: 'calc(100vh - 2rem)',
+          overflowY: 'auto',
         }}
       >
         <div
@@ -148,45 +153,170 @@ export function CelebrationModal({
           {message || defaultSubtext}
         </p>
 
-        {/* Standardized Metrics Grid */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: grade.biomarkerLabel ? '1fr 1fr 1fr' : '1fr 1fr',
-            gap: '0.75rem',
-            background: 'var(--color-bg)',
-            padding: '1rem',
-            borderRadius: '16px',
-            marginBottom: '1.75rem',
-          }}
-        >
-          <div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-dim)', fontWeight: 600, textTransform: 'uppercase' }}>
-              {t('activity')}
-            </div>
-            <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text-main)', marginTop: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {gameTitle}
-            </div>
-          </div>
-          <div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-dim)', fontWeight: 600, textTransform: 'uppercase' }}>
-              {t('score')}
-            </div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-success)', marginTop: '0.1rem' }}>
-              {grade.score}%
-            </div>
-          </div>
-          {grade.biomarkerLabel && (
-            <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-dim)', fontWeight: 600, textTransform: 'uppercase' }}>
-                Biomarker
+        {/* Standardized Metrics Bento Container */}
+        {(() => {
+          let bioName = 'Biomarker';
+          let bioValue = grade.biomarkerLabel || '';
+          if (grade.biomarkerLabel && grade.biomarkerLabel.includes(':')) {
+            const colonIdx = grade.biomarkerLabel.indexOf(':');
+            bioName = grade.biomarkerLabel.substring(0, colonIdx).trim();
+            bioValue = grade.biomarkerLabel.substring(colonIdx + 1).trim();
+          }
+
+          return (
+            <div
+              style={{
+                background: 'var(--color-bg, #f4f7f4)',
+                border: '2px solid var(--color-border, #1c1b1b)',
+                borderRadius: '16px',
+                padding: '1rem',
+                marginBottom: '1.5rem',
+                boxShadow: '3px 3px 0px var(--color-border, #1c1b1b)',
+                textAlign: 'left',
+                boxSizing: 'border-box',
+                width: '100%',
+                overflow: 'hidden',
+              }}
+            >
+              {/* Activity Header Strip */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '0.5rem',
+                  paddingBottom: '0.65rem',
+                  borderBottom: '1.5px dashed var(--color-border-subtle, #c9dcd0)',
+                  marginBottom: '0.75rem',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
+                  <Activity size={16} color="var(--color-primary, #214935)" />
+                  <span
+                    style={{
+                      fontSize: '0.75rem',
+                      fontWeight: 800,
+                      color: 'var(--color-text-dim, #78716c)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                    }}
+                  >
+                    {t('activity')}
+                  </span>
+                </div>
+                <span
+                  style={{
+                    fontSize: '0.92rem',
+                    fontWeight: 700,
+                    color: 'var(--color-text-main, #1c1b1b)',
+                    textAlign: 'right',
+                    wordBreak: 'break-word',
+                    flex: '1 1 auto',
+                  }}
+                >
+                  {gameTitle}
+                </span>
               </div>
-              <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f4c81', marginTop: '0.25rem' }}>
-                {grade.biomarkerLabel}
+
+              {/* Stat Cards Grid */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: grade.biomarkerLabel ? '1fr 1fr' : '1fr',
+                  gap: '0.65rem',
+                  boxSizing: 'border-box',
+                }}
+              >
+                {/* Score Card */}
+                <div
+                  style={{
+                    background: 'var(--color-surface, #ffffff)',
+                    border: '1.5px solid var(--color-border, #1c1b1b)',
+                    borderRadius: '12px',
+                    padding: '0.75rem 0.5rem',
+                    textAlign: 'center',
+                    boxShadow: '2px 2px 0px rgba(28,27,27,0.08)',
+                    minWidth: 0,
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '0.72rem',
+                      color: 'var(--color-text-dim, #78716c)',
+                      fontWeight: 800,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em',
+                    }}
+                  >
+                    {t('score')}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '1.65rem',
+                      fontWeight: 900,
+                      color: 'var(--color-success, #15803d)',
+                      marginTop: '0.15rem',
+                      lineHeight: 1.15,
+                      fontFeatureSettings: '"tnum"',
+                    }}
+                  >
+                    {grade.score}%
+                  </div>
+                </div>
+
+                {/* Biomarker Card */}
+                {grade.biomarkerLabel && (
+                  <div
+                    style={{
+                      background: 'var(--color-surface, #ffffff)',
+                      border: '1.5px solid var(--color-border, #1c1b1b)',
+                      borderRadius: '12px',
+                      padding: '0.75rem 0.5rem',
+                      textAlign: 'center',
+                      boxShadow: '2px 2px 0px rgba(28,27,27,0.08)',
+                      minWidth: 0,
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: '0.72rem',
+                        color: 'var(--color-text-dim, #78716c)',
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                      title={bioName}
+                    >
+                      {bioName}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '1.45rem',
+                        fontWeight: 900,
+                        color: '#0f4c81',
+                        marginTop: '0.15rem',
+                        lineHeight: 1.15,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        fontFeatureSettings: '"tnum"',
+                      }}
+                      title={bioValue}
+                    >
+                      {bioValue}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-          )}
-        </div>
+          );
+        })()}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           <button
