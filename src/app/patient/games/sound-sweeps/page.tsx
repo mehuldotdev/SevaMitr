@@ -8,6 +8,7 @@ import { brainHqAudio } from '@/lib/audio/brainHqAudio';
 import { offlineDb } from '@/lib/db/offlineDb';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { CelebrationModal } from '@/components/CelebrationModal';
+import { scoreSoundSweeps } from '@/lib/scoring/gradingEngine';
 
 type SweepDirection = 'up' | 'down';
 
@@ -29,21 +30,21 @@ export default function SoundSweepsGame() {
   const router = useRouter();
   const { language, t } = useLanguage();
 
-  // Psychophysics Inter-Stimulus Interval (ISI in ms)
-  const [isiMs, setIsiMs] = useState<number>(300);
   const [trial, setTrial] = useState<number>(1);
-  const maxTrials = 6;
-
-  // State: 'READY' | 'PLAYING_AUDIO' | 'USER_INPUT' | 'FEEDBACK' | 'COMPLETE'
-  const [state, setState] = useState<'READY' | 'PLAYING_AUDIO' | 'USER_INPUT' | 'FEEDBACK' | 'COMPLETE'>('READY');
+  const maxTrials = 5;
+  const [isiMs, setIsiMs] = useState<number>(300); // Inter-stimulus interval temporal resolution
+  const [state, setState] = useState<'INTRO' | 'READY' | 'PLAYING_AUDIO' | 'USER_INPUT' | 'FEEDBACK' | 'COMPLETE'>('INTRO');
   const [currentPattern, setCurrentPattern] = useState<SweepPattern>(PATTERNS[0]);
   const [userSelection, setUserSelection] = useState<string | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+
+  // Metrics
   const [score, setScore] = useState<number>(0);
+  const [biomarkerLabel, setBiomarkerLabel] = useState<string>('Temporal ISI: 120ms');
   const [thresholdsAchieved, setThresholdsAchieved] = useState<number[]>([]);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
-
   const errorCountRef = useRef<number>(0);
+  const correctCountRef = useRef<number>(0);
   const totalDurationStartRef = useRef<number>(Date.now());
 
   useEffect(() => {
@@ -92,7 +93,8 @@ export default function SoundSweepsGame() {
 
     if (correct) {
       brainHqAudio.playSuccessChime();
-      setScore((prev) => prev + 25);
+      correctCountRef.current += 1;
+      setScore(Math.round((correctCountRef.current / maxTrials) * 100));
       setThresholdsAchieved((prev) => [...prev, isiMs]);
 
       // Psychophysics 2-down 1-up staircase: make the temporal gap tighter (faster processing)
@@ -119,12 +121,21 @@ export default function SoundSweepsGame() {
     const totalDurationSec = Math.round((Date.now() - totalDurationStartRef.current) / 1000);
     const bestThreshold = thresholdsAchieved.length > 0 ? Math.min(...thresholdsAchieved) : isiMs;
 
+    const { score: calibratedScore, biomarker } = scoreSoundSweeps(
+      correctCountRef.current,
+      maxTrials,
+      bestThreshold
+    );
+
+    setScore(calibratedScore);
+    setBiomarkerLabel(biomarker);
+
     offlineDb.saveSession({
       patientId: offlineDb.getPatient().id,
       gameId: 'sound_sweeps',
       gameTitle: 'BrainHQ: Sound Sweeps (Auditory Temporal Processing)',
       difficultyLevel: 3,
-      score: score + (bestThreshold <= 100 ? 35 : 20),
+      score: calibratedScore,
       durationSec: totalDurationSec,
       hesitationMs: bestThreshold,
       errorCount: errorCountRef.current,
@@ -526,10 +537,10 @@ export default function SoundSweepsGame() {
               }}
             >
               <div className="font-regus-wide" style={{ fontSize: '0.68rem', color: '#57534e' }}>
-                POINTS
+                ACCURACY
               </div>
               <div className="font-regus-metric" style={{ fontSize: '1.6rem', color: '#0f4c81', marginTop: '0.2rem' }}>
-                {score} pts
+                {score}%
               </div>
             </div>
           </div>
@@ -542,9 +553,11 @@ export default function SoundSweepsGame() {
         score={score}
         timeSpentSec={Math.round((Date.now() - totalDurationStartRef.current) / 1000)}
         message={`Acoustic Temporal Resolution: ${isiMs}ms. Primary auditory cortex frequency discrimination tested.`}
+        biomarkerLabel={biomarkerLabel}
         onPlayAgain={() => {
           setTrial(1);
           setScore(0);
+          correctCountRef.current = 0;
           setIsiMs(300);
           setState('READY');
           totalDurationStartRef.current = Date.now();

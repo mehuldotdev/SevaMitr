@@ -14,17 +14,19 @@ export default function PatientsDirectoryPage() {
   const { user, isLoggedIn, isLoading } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeId, setActiveId] = useState(DEFAULT_PATIENT.id);
+  const isDemo = user?.id === 'demo-caregiver-001';
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [patientToDelete, setPatientToDelete] = useState<PatientProfile | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Stale-While-Revalidate data hook: 0ms cached return + background network revalidation
   const fetchPatients = async (): Promise<PatientProfile[]> => {
-    const res = await fetch('/api/patients');
+    if (!user?.id) return [];
+    const res = await fetch(`/api/patients?caregiverId=${encodeURIComponent(user.id)}`);
     if (!res.ok) throw new Error('Failed to fetch patients');
     const data = await res.json();
-    return data.patients && data.patients.length > 0 ? data.patients : [DEFAULT_PATIENT];
+    return Array.isArray(data.patients) ? data.patients : [];
   };
 
   const {
@@ -32,13 +34,13 @@ export default function PatientsDirectoryPage() {
     isValidating,
     mutate,
   } = useStaleWhileRevalidate<PatientProfile[]>(
-    isLoggedIn && user?.role !== 'PATIENT' ? 'patients_directory' : null,
+    isLoggedIn && user?.role !== 'PATIENT' && user?.id ? `patients_directory_${user.id}` : null,
     fetchPatients,
     {
-      initialData: [DEFAULT_PATIENT],
+      initialData: isDemo ? [DEFAULT_PATIENT] : [],
       revalidateOnFocus: true,
       dedupingInterval: 4000,
-      persistKey: 'sevamitr_cached_patients',
+      persistKey: user?.id ? `sevamitr_cached_patients_${user.id}` : undefined,
     }
   );
 
@@ -54,8 +56,15 @@ export default function PatientsDirectoryPage() {
     }
   }, [isLoading, isLoggedIn, user, router]);
 
+  // Keep active patient selected
+  useEffect(() => {
+    if (!activeId && patients && patients.length > 0) {
+      setActiveId(patients[0].id);
+    }
+  }, [patients, activeId]);
+
   const handleSelectPatient = (p: PatientProfile) => {
-    offlineDb.savePatient(p);
+    offlineDb.savePatient(p, user?.id);
     setActiveId(p.id);
   };
 
@@ -76,15 +85,21 @@ export default function PatientsDirectoryPage() {
       mutate(remaining, false);
 
       // Update persistent cache
-      try {
-        localStorage.setItem('sevamitr_cached_patients', JSON.stringify(remaining));
-      } catch {}
+      if (user?.id) {
+        try {
+          localStorage.setItem(`sevamitr_cached_patients_${user.id}`, JSON.stringify(remaining));
+        } catch {}
+      }
 
-      // If deleting currently active patient, switch to first remaining or default
+      // If deleting currently active patient, switch to first remaining or null
       if (activeId === patientToDelete.id) {
-        const nextActive = remaining[0] || DEFAULT_PATIENT;
-        offlineDb.savePatient(nextActive);
-        setActiveId(nextActive.id);
+        const nextActive = remaining[0] || null;
+        if (nextActive) {
+          offlineDb.savePatient(nextActive, user?.id);
+          setActiveId(nextActive.id);
+        } else {
+          setActiveId(null);
+        }
       }
 
       setPatientToDelete(null);
@@ -430,6 +445,7 @@ export default function PatientsDirectoryPage() {
           isOpen={showRegisterModal}
           onClose={() => setShowRegisterModal(false)}
           onPatientRegistered={(newPatient) => {
+            offlineDb.savePatient(newPatient, user?.id);
             setActiveId(newPatient.id);
             mutate((prev) => {
               const current = prev || [];

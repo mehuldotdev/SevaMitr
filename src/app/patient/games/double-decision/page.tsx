@@ -7,6 +7,7 @@ import { ArrowLeft, Volume2, Sparkles, CheckCircle2, RotateCcw, Zap, Maximize2, 
 import { brainHqAudio } from '@/lib/audio/brainHqAudio';
 import { offlineDb } from '@/lib/db/offlineDb';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { scoreDoubleDecision } from '@/lib/scoring/gradingEngine';
 import { CelebrationModal } from '@/components/CelebrationModal';
 import { CONTRASTING_PAIRS, shuffleArray } from '@/lib/games/emojiPool';
 
@@ -92,10 +93,12 @@ export default function DoubleDecisionGame() {
 
   // Metrics
   const [score, setScore] = useState<number>(0);
+  const [biomarkerLabel, setBiomarkerLabel] = useState<string>('UFOV Threshold: 220ms');
   const [thresholdsAchieved, setThresholdsAchieved] = useState<number[]>([]);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const trialStartTimeRef = useRef<number>(Date.now());
   const errorCountRef = useRef<number>(0);
+  const correctCountRef = useRef<number>(0);
   const totalDurationStartRef = useRef<number>(Date.now());
 
   useEffect(() => {
@@ -173,7 +176,8 @@ export default function DoubleDecisionGame() {
 
     if (isSuccess) {
       brainHqAudio.playSuccessChime();
-      setScore((prev) => prev + 25);
+      correctCountRef.current += 1;
+      setScore(Math.round((correctCountRef.current / maxTrials) * 100));
       setThresholdsAchieved((prev) => [...prev, exposureMs]);
 
       // Adaptive Staircase: Speed increases (exposure drops)
@@ -202,13 +206,22 @@ export default function DoubleDecisionGame() {
     const bestThreshold =
       thresholdsAchieved.length > 0 ? Math.min(...thresholdsAchieved) : exposureMs;
 
+    const { score: calibratedScore, biomarker } = scoreDoubleDecision(
+      correctCountRef.current,
+      maxTrials,
+      bestThreshold
+    );
+
+    setScore(calibratedScore);
+    setBiomarkerLabel(biomarker);
+
     // Save session to offlineDb & Neon Cloud
     offlineDb.saveSession({
       patientId: offlineDb.getPatient().id,
       gameId: 'double_decision',
       gameTitle: 'BrainHQ: Double Decision (UFOV Visual Speed)',
       difficultyLevel: 3,
-      score: score + (bestThreshold <= 180 ? 40 : 20),
+      score: calibratedScore,
       durationSec: totalDurationSec,
       hesitationMs: bestThreshold,
       errorCount: errorCountRef.current,
@@ -629,10 +642,10 @@ export default function DoubleDecisionGame() {
               }}
             >
               <div className="font-regus-wide" style={{ fontSize: '0.68rem', color: '#57534e' }}>
-                POINTS
+                ACCURACY
               </div>
               <div className="font-regus-metric" style={{ fontSize: '1.6rem', color: '#214935', marginTop: '0.2rem' }}>
-                {score} pts
+                {score}%
               </div>
             </div>
           </div>
@@ -645,10 +658,12 @@ export default function DoubleDecisionGame() {
         score={score}
         timeSpentSec={Math.round((Date.now() - totalDurationStartRef.current) / 1000)}
         message={`Visual Speed of Processing: ${exposureMs}ms. Saccadic eye tracking and peripheral field tested.`}
+        biomarkerLabel={biomarkerLabel}
         onPlayAgain={() => {
           setCenterPairs(generateCenterPairs());
           setTrial(1);
           setScore(0);
+          correctCountRef.current = 0;
           setExposureMs(450);
           setThresholdsAchieved([]);
           errorCountRef.current = 0;

@@ -2,9 +2,10 @@
 
 import React, { useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { Star, CheckCircle, Home } from 'lucide-react';
+import { Star, CheckCircle, Home, Activity } from 'lucide-react';
 import Link from 'next/link';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { computeGrade } from '@/lib/scoring/gradingEngine';
 
 interface CelebrationModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface CelebrationModalProps {
   score: number;
   timeSpentSec: number;
   message?: string;
+  biomarkerLabel?: string;
   onPlayAgain: () => void;
   nextGameUrl?: string;
 }
@@ -22,10 +24,12 @@ export function CelebrationModal({
   score,
   timeSpentSec,
   message,
+  biomarkerLabel,
   onPlayAgain,
   nextGameUrl = '/patient',
 }: CelebrationModalProps) {
   const { language, t } = useLanguage();
+  const grade = computeGrade(score, biomarkerLabel);
 
   useEffect(() => {
     if (isOpen) {
@@ -81,9 +85,9 @@ export function CelebrationModal({
       >
         <div
           style={{
-            width: '80px',
-            height: '80px',
-            margin: '0 auto 1.25rem',
+            width: '72px',
+            height: '72px',
+            margin: '0 auto 1rem',
             borderRadius: '50%',
             background: 'var(--color-primary-soft)',
             display: 'flex',
@@ -92,27 +96,64 @@ export function CelebrationModal({
             color: 'var(--color-primary)',
           }}
         >
-          <CheckCircle size={48} />
+          <CheckCircle size={44} />
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-          {[1, 2, 3].map((star) => (
-            <Star key={star} size={34} fill="#fbc02d" color="#f57f17" />
-          ))}
+        {/* Dynamic 1-3 Stars */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.85rem' }}>
+          {[1, 2, 3].map((starIndex) => {
+            const isFilled = starIndex <= grade.stars;
+            return (
+              <Star
+                key={starIndex}
+                size={34}
+                fill={isFilled ? '#fbc02d' : '#e2e8f0'}
+                color={isFilled ? '#f57f17' : '#94a3b8'}
+                style={{
+                  filter: isFilled ? 'drop-shadow(0 2px 4px rgba(251, 192, 45, 0.35))' : 'none',
+                }}
+              />
+            );
+          })}
         </div>
 
-        <h2 style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--color-primary)', marginBottom: '0.5rem' }}>
+        {/* Letter Grade Pill */}
+        <div style={{ marginBottom: '0.85rem' }}>
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              padding: '0.35rem 0.95rem',
+              borderRadius: '999px',
+              background: grade.badgeBg,
+              color: grade.badgeColor,
+              fontWeight: 700,
+              fontSize: '0.88rem',
+              border: `1.5px solid ${grade.badgeColor}33`,
+              textTransform: 'uppercase',
+              letterSpacing: '0.02em',
+            }}
+          >
+            <span style={{ fontSize: '1.05rem', fontWeight: 800 }}>Grade {grade.letterGrade}</span>
+            <span>•</span>
+            <span>{grade.gradeLabel}</span>
+          </div>
+        </div>
+
+        <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--color-primary)', marginBottom: '0.4rem' }}>
           {t('wonderfulJob')}
         </h2>
-        <p style={{ fontSize: '1.1rem', color: 'var(--color-text-muted)', marginBottom: '1.5rem' }}>
+        <p style={{ fontSize: '1.05rem', color: 'var(--color-text-muted)', marginBottom: '1.4rem', lineHeight: 1.45 }}>
           {message || defaultSubtext}
         </p>
 
+        {/* Standardized Metrics Grid */}
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '1rem',
+            gridTemplateColumns: grade.biomarkerLabel ? '1fr 1fr 1fr' : '1fr 1fr',
+            gap: '0.75rem',
             background: 'var(--color-bg)',
             padding: '1rem',
             borderRadius: '16px',
@@ -120,17 +161,31 @@ export function CelebrationModal({
           }}
         >
           <div>
-            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-dim)', fontWeight: 600 }}>
+            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-dim)', fontWeight: 600, textTransform: 'uppercase' }}>
               {t('activity')}
             </div>
-            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-main)' }}>{gameTitle}</div>
+            <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text-main)', marginTop: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {gameTitle}
+            </div>
           </div>
           <div>
-            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-dim)', fontWeight: 600 }}>
+            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-dim)', fontWeight: 600, textTransform: 'uppercase' }}>
               {t('score')}
             </div>
-            <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--color-success)' }}>{score}%</div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-success)', marginTop: '0.1rem' }}>
+              {grade.score}%
+            </div>
           </div>
+          {grade.biomarkerLabel && (
+            <div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-dim)', fontWeight: 600, textTransform: 'uppercase' }}>
+                Biomarker
+              </div>
+              <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f4c81', marginTop: '0.25rem' }}>
+                {grade.biomarkerLabel}
+              </div>
+            </div>
+          )}
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>

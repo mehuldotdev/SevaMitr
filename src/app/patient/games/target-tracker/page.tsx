@@ -8,6 +8,7 @@ import { brainHqAudio } from '@/lib/audio/brainHqAudio';
 import { offlineDb } from '@/lib/db/offlineDb';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { CelebrationModal } from '@/components/CelebrationModal';
+import { scoreTargetTracker } from '@/lib/scoring/gradingEngine';
 import { getRandomEmojis } from '@/lib/games/emojiPool';
 
 interface TrackingOrb {
@@ -29,7 +30,7 @@ export default function TargetTrackerGame() {
   const { language, t } = useLanguage();
 
   const [round, setRound] = useState<number>(1);
-  const maxRounds = 5;
+  const maxRounds = 4;
 
   // Phases: 'READY' | 'HIGHLIGHT_TARGETS' | 'TRACKING' | 'SELECTING' | 'FEEDBACK' | 'COMPLETE'
   const [phase, setPhase] = useState<
@@ -38,13 +39,17 @@ export default function TargetTrackerGame() {
 
   const [orbs, setOrbs] = useState<TrackingOrb[]>([]);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
-  const [score, setScore] = useState<number>(0);
   const [roundSuccess, setRoundSuccess] = useState<boolean | null>(null);
+  
+  // Metrics
+  const [score, setScore] = useState<number>(0);
+  const [biomarkerLabel, setBiomarkerLabel] = useState<string>('Tracking Accuracy: 100%');
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
   const animFrameRef = useRef<number | null>(null);
   const orbsRef = useRef<TrackingOrb[]>([]);
   const errorCountRef = useRef<number>(0);
+  const correctCountRef = useRef<number>(0);
   const totalDurationStartRef = useRef<number>(Date.now());
 
   useEffect(() => {
@@ -204,7 +209,8 @@ export default function TargetTrackerGame() {
 
       if (allCorrect) {
         brainHqAudio.playSuccessChime();
-        setScore((prev) => prev + 30);
+        correctCountRef.current += 1;
+        setScore(Math.round((correctCountRef.current / maxRounds) * 100));
       } else {
         brainHqAudio.playGentleError();
         errorCountRef.current += 1;
@@ -224,14 +230,21 @@ export default function TargetTrackerGame() {
   const finishGame = () => {
     setPhase('COMPLETE');
     const totalDurationSec = Math.round((Date.now() - totalDurationStartRef.current) / 1000);
-    const accuracy = Math.round(((maxRounds - errorCountRef.current) / maxRounds) * 100);
+    const { score: calibratedScore, biomarker } = scoreTargetTracker(
+      correctCountRef.current,
+      maxRounds,
+      totalDurationSec
+    );
+
+    setScore(calibratedScore);
+    setBiomarkerLabel(biomarker);
 
     offlineDb.saveSession({
       patientId: offlineDb.getPatient().id,
       gameId: 'target_tracker',
       gameTitle: 'BrainHQ: Target Tracker (Multiple Object Tracking)',
       difficultyLevel: 3,
-      score: score + accuracy,
+      score: calibratedScore,
       durationSec: totalDurationSec,
       hesitationMs: 2500,
       errorCount: errorCountRef.current,
@@ -568,10 +581,10 @@ export default function TargetTrackerGame() {
               }}
             >
               <div className="font-regus-wide" style={{ fontSize: '0.68rem', color: '#57534e' }}>
-                POINTS
+                ACCURACY
               </div>
               <div className="font-regus-metric" style={{ fontSize: '1.6rem', color: '#c85a32', marginTop: '0.2rem' }}>
-                {score} pts
+                {score}%
               </div>
             </div>
           </div>
@@ -584,9 +597,11 @@ export default function TargetTrackerGame() {
         score={score}
         timeSpentSec={Math.round((Date.now() - totalDurationStartRef.current) / 1000)}
         message="Multiple Object Tracking complete. Parietal lobe spatial tracking and divided visual attention exercised."
+        biomarkerLabel={biomarkerLabel}
         onPlayAgain={() => {
           setRound(1);
           setScore(0);
+          correctCountRef.current = 0;
           setPhase('READY');
           totalDurationStartRef.current = Date.now();
         }}

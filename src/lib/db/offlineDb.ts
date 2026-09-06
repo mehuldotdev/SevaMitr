@@ -137,20 +137,30 @@ class OfflineStorageEngine {
   }
 
   // Patient Profile
-  getPatient(): PatientProfile {
-    if (!this.isBrowser()) return DEFAULT_PATIENT;
+  getPatient(): PatientProfile;
+  getPatient(caregiverId: string): PatientProfile | null;
+  getPatient(caregiverId?: string): PatientProfile | null {
+    if (!this.isBrowser()) return (!caregiverId || caregiverId === 'demo-caregiver-001') ? DEFAULT_PATIENT : null;
     try {
+      if (caregiverId) {
+        const scoped = localStorage.getItem(`${STORAGE_KEYS.PATIENT}_${caregiverId}`);
+        if (scoped) return JSON.parse(scoped);
+        return caregiverId === 'demo-caregiver-001' ? DEFAULT_PATIENT : null;
+      }
       const stored = localStorage.getItem(STORAGE_KEYS.PATIENT);
       return stored ? JSON.parse(stored) : DEFAULT_PATIENT;
     } catch {
-      return DEFAULT_PATIENT;
+      return (!caregiverId || caregiverId === 'demo-caregiver-001') ? DEFAULT_PATIENT : null;
     }
   }
 
-  savePatient(patient: PatientProfile) {
+  savePatient(patient: PatientProfile, caregiverId?: string) {
     if (!this.isBrowser()) return;
     try {
       localStorage.setItem(STORAGE_KEYS.PATIENT, JSON.stringify(patient));
+      if (caregiverId) {
+        localStorage.setItem(`${STORAGE_KEYS.PATIENT}_${caregiverId}`, JSON.stringify(patient));
+      }
     } catch (e) {
       console.error('Failed to save patient', e);
     }

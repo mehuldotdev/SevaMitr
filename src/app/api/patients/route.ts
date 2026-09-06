@@ -4,10 +4,22 @@ import { DEFAULT_PATIENT } from '@/lib/db/offlineDb';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const caregiverId = searchParams.get('caregiverId');
+
+  // If no caregiverId provided, return empty array to guarantee strict privacy & isolation
+  if (!caregiverId) {
+    return NextResponse.json(
+      { patients: [] },
+      { headers: { 'Cache-Control': 'no-store, max-age=0' } }
+    );
+  }
+
   if (prisma) {
     try {
       const patients = await prisma.patient.findMany({
+        where: { caregiverId },
         include: { caregiver: true, dailyMetrics: { take: 1, orderBy: { date: 'desc' } } },
       });
       if (patients.length > 0) {
@@ -27,62 +39,34 @@ export async function GET() {
           { patients: formattedPatients },
           {
             headers: {
-              'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=86400',
+              'Cache-Control': 'no-store, max-age=0',
             },
           }
         );
       }
     } catch (e) {
-      console.warn('PostgreSQL fetch error, returning fallback patients:', e);
+      console.warn('PostgreSQL fetch error, checking caregiver fallback:', e);
     }
   }
 
-  // Realistic NER Patient list for ASHA / Anganwadi worker tracking
-  const samplePatients = [
-    DEFAULT_PATIENT,
-    {
-      id: 'patient-ner-002',
-      fullName: 'Gitanjali Phukan',
-      age: 71,
-      gender: 'Female',
-      region: 'Jorhat Tea Estate, Assam',
-      primaryLanguage: 'en',
-      dementiaStage: 'Moderate',
-      emergencyContact: '+91 94351 55667',
-      caregiverName: 'Monoj Phukan (Son)',
-      caregiverPhone: '+91 94351 99887',
-    },
-    {
-      id: 'patient-ner-003',
-      fullName: 'Khangembam Chaoba Singh',
-      age: 79,
-      gender: 'Male',
-      region: 'Imphal West, Manipur',
-      primaryLanguage: 'en',
-      dementiaStage: 'MCI',
-      emergencyContact: '+91 98620 44332',
-      caregiverName: 'Ibemhal Devi (Wife)',
-      caregiverPhone: '+91 98620 11223',
-    },
-    {
-      id: 'patient-ner-004',
-      fullName: 'Wanpynskhem Mawlong',
-      age: 68,
-      gender: 'Female',
-      region: 'East Khasi Hills, Meghalaya (Sohra)',
-      primaryLanguage: 'en',
-      dementiaStage: 'Mild',
-      emergencyContact: '+91 98560 77889',
-      caregiverName: 'Rilang Mawlong (Daughter)',
-      caregiverPhone: '+91 98560 33445',
-    },
-  ];
+  // Only the pre-seeded demo caregiver account gets the mock patient for clinical demo.
+  // Real caregivers start with strictly zero patients until registered.
+  if (caregiverId === 'demo-caregiver-001') {
+    return NextResponse.json(
+      { patients: [DEFAULT_PATIENT] },
+      {
+        headers: {
+          'Cache-Control': 'no-store, max-age=0',
+        },
+      }
+    );
+  }
 
   return NextResponse.json(
-    { patients: samplePatients },
+    { patients: [] },
     {
       headers: {
-        'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=86400',
+        'Cache-Control': 'no-store, max-age=0',
       },
     }
   );

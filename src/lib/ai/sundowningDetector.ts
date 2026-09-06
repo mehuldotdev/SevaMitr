@@ -61,6 +61,9 @@ export function analyzePatientCognitiveData(sessions: CognitiveSessionRecord[]):
     double_decision: [],
     sound_sweeps: [],
     target_tracker: [],
+    speed_maze: [],
+    bijuli_tap: [],
+    bikhama_khoj: [],
   };
 
   const morningSessions: CognitiveSessionRecord[] = [];
@@ -69,7 +72,7 @@ export function analyzePatientCognitiveData(sessions: CognitiveSessionRecord[]):
 
   sessions.forEach((s) => {
     if (byGame[s.gameId]) {
-      byGame[s.gameId].push(s.score);
+      byGame[s.gameId].push(Math.max(0, Math.min(100, s.score)));
     }
     totalLatency += s.hesitationMs;
 
@@ -83,20 +86,29 @@ export function analyzePatientCognitiveData(sessions: CognitiveSessionRecord[]):
   const getAvg = (arr: number[]) =>
     arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null;
 
-  const memAvg = getAvg(byGame.smriti_setu);
-  const execAvg = getAvg(byGame.doharani);
-  const attAvg = getAvg(byGame.rang_tanti) ?? getAvg(byGame.target_tracker);
-  const audAvg = getAvg(byGame.shabda_tarang) ?? getAvg(byGame.sound_sweeps);
-  const mathAvg = getAvg(byGame.bazaar_saathi) ?? getAvg(byGame.double_decision);
+  // Clinically map traditional and speed trial games to domains
+  const memScores = [...byGame.smriti_setu, ...byGame.doharani];
+  const execScores = [...byGame.speed_maze, ...byGame.doharani];
+  const attScores = [...byGame.rang_tanti, ...byGame.target_tracker, ...byGame.bijuli_tap];
+  const audScores = [...byGame.shabda_tarang, ...byGame.sound_sweeps];
+  const mathScores = [...byGame.bazaar_saathi, ...byGame.double_decision, ...byGame.bikhama_khoj];
+
+  const memAvg = getAvg(memScores);
+  const execAvg = getAvg(execScores);
+  const attAvg = getAvg(attScores);
+  const audAvg = getAvg(audScores);
+  const mathAvg = getAvg(mathScores);
 
   const availableScores = [memAvg, execAvg, attAvg, audAvg, mathAvg].filter(
     (s): s is number => s !== null
   );
 
-  const overallDci =
+  const rawDci =
     availableScores.length > 0
       ? Math.round(availableScores.reduce((a, b) => a + b, 0) / availableScores.length)
-      : Math.round(sessions.reduce((acc, s) => acc + s.score, 0) / sessions.length);
+      : Math.round(sessions.reduce((acc, s) => acc + Math.max(0, Math.min(100, s.score)), 0) / sessions.length);
+
+  const overallDci = Math.max(0, Math.min(100, rawDci));
 
   // Sundowning calculation: requires both morning and evening data
   const hasEnoughData = morningSessions.length > 0 && eveningSessions.length > 0;
@@ -146,11 +158,11 @@ export function analyzePatientCognitiveData(sessions: CognitiveSessionRecord[]):
     overallDci,
     sessionsCount: sessions.length,
     domainScores: {
-      memory: memAvg ?? 0,
-      executive: execAvg ?? 0,
-      attention: attAvg ?? 0,
-      auditory: audAvg ?? 0,
-      math: mathAvg ?? 0,
+      memory: Math.max(0, Math.min(100, memAvg ?? 0)),
+      executive: Math.max(0, Math.min(100, execAvg ?? 0)),
+      attention: Math.max(0, Math.min(100, attAvg ?? 0)),
+      auditory: Math.max(0, Math.min(100, audAvg ?? 0)),
+      math: Math.max(0, Math.min(100, mathAvg ?? 0)),
     },
     sundowning: {
       detected: sundowningDetected,

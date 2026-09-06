@@ -20,6 +20,7 @@ import { brainHqAudio } from '@/lib/audio/brainHqAudio';
 import { offlineDb } from '@/lib/db/offlineDb';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { CelebrationModal } from '@/components/CelebrationModal';
+import { scoreBikhamaKhoj } from '@/lib/scoring/gradingEngine';
 import { getRandomVisualSearchRounds } from '@/lib/games/emojiPool';
 
 interface RoundConfig {
@@ -93,6 +94,8 @@ export default function BikhamaKhojGame() {
   const [isGameOver, setIsGameOver] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [roundLatencies, setRoundLatencies] = useState<number[]>([]);
+  const [finalScore, setFinalScore] = useState<number>(85);
+  const [biomarkerLabel, setBiomarkerLabel] = useState<string>('Visual Search: 850ms');
 
   const stimulusStartTimeRef = useRef<number>(Date.now());
   const distractorTapsRef = useRef<number>(0);
@@ -202,7 +205,14 @@ export default function BikhamaKhojGame() {
       ? Math.round(roundLatencies.reduce((a, b) => a + b, 0) / roundLatencies.length)
       : 850;
 
-    const finalScore = Math.min(100, Math.max(50, Math.round(110 - avgLatency / 25 - distractorTapsRef.current * 3)));
+    const { score: calculatedScore, biomarker } = scoreBikhamaKhoj(
+      totalRounds,
+      totalRounds,
+      avgLatency,
+      distractorTapsRef.current
+    );
+    setFinalScore(calculatedScore);
+    setBiomarkerLabel(biomarker);
 
     brainHqAudio.playSuccessChime();
     brainHqAudio.playBihuDhol();
@@ -212,7 +222,7 @@ export default function BikhamaKhojGame() {
       gameId: 'bikhama_khoj',
       gameTitle: 'BrainHQ: Bikhama Khoj (Visual Search & Odd One Out)',
       difficultyLevel: 3,
-      score: finalScore,
+      score: calculatedScore,
       durationSec: totalDurationSec,
       hesitationMs: avgLatency,
       errorCount: distractorTapsRef.current,
@@ -538,9 +548,10 @@ export default function BikhamaKhojGame() {
       <CelebrationModal
         isOpen={isGameOver}
         gameTitle="Bikhama Khoj (Visual Search)"
-        score={Math.min(100, Math.max(50, Math.round(110 - avgSpeedMs / 25 - distractorTapsRef.current * 3)))}
+        score={finalScore}
         timeSpentSec={Math.max(10, Math.round((Date.now() - sessionStartTimeRef.current) / 1000))}
         message={`Average search speed: ${avgSpeedMs}ms • 5/5 Target puzzles solved • Misses: ${distractorTapsRef.current}`}
+        biomarkerLabel={biomarkerLabel}
         onPlayAgain={() => {
           const freshRounds = generateBikhamaRounds();
           setRounds(freshRounds);

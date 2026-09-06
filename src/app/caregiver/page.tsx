@@ -34,7 +34,7 @@ import { RegisterPatientModal } from '@/components/RegisterPatientModal';
 export default function CaregiverDashboardPage() {
   const router = useRouter();
   const { user, isLoggedIn, isLoading } = useAuth();
-  const [patient, setPatient] = useState<PatientProfile>(DEFAULT_PATIENT);
+  const [patient, setPatient] = useState<PatientProfile | null>(null);
   const [mounted, setMounted] = useState(false);
   const [sessions, setSessions] = useState<CognitiveSessionRecord[]>([]);
   const [analysis, setAnalysis] = useState<CognitiveAnalysisResult>(analyzePatientCognitiveData([]));
@@ -53,34 +53,67 @@ export default function CaregiverDashboardPage() {
       return;
     }
 
-    const loadedPatient = offlineDb.getPatient();
-    setPatient(loadedPatient);
+    if (!user) return;
+    const isDemo = user.id === 'demo-caregiver-001';
 
-    const localSessions = offlineDb.getSessions(loadedPatient.id);
-    setSessions(localSessions);
-    setAnalysis(analyzePatientCognitiveData(localSessions));
+    const loadSessions = (p: PatientProfile) => {
+      const localSessions = offlineDb.getSessions(p.id);
+      setSessions(localSessions);
+      setAnalysis(analyzePatientCognitiveData(localSessions));
 
-    if (loadedPatient?.id) {
-      fetch(`/api/patients/${loadedPatient.id}/sessions`)
+      if (p.id) {
+        fetch(`/api/patients/${p.id}/sessions`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.sessions && Array.isArray(data.sessions) && data.sessions.length > 0) {
+              setSessions(data.sessions);
+              setAnalysis(analyzePatientCognitiveData(data.sessions));
+            }
+          })
+          .catch(() => {});
+      }
+    };
+
+    // 1. Try local caregiver-scoped patient
+    const localPatient = offlineDb.getPatient(user.id);
+    if (localPatient) {
+      setPatient(localPatient);
+      loadSessions(localPatient);
+    } else if (isDemo) {
+      setPatient(DEFAULT_PATIENT);
+      loadSessions(DEFAULT_PATIENT);
+    } else {
+      // Fetch scoped patient list from PostgreSQL/API
+      fetch(`/api/patients?caregiverId=${encodeURIComponent(user.id)}`)
         .then((res) => res.json())
         .then((data) => {
-          if (data.sessions && Array.isArray(data.sessions) && data.sessions.length > 0) {
-            setSessions(data.sessions);
-            setAnalysis(analyzePatientCognitiveData(data.sessions));
+          if (data.patients && Array.isArray(data.patients) && data.patients.length > 0) {
+            const firstPatient = data.patients[0];
+            setPatient(firstPatient);
+            offlineDb.savePatient(firstPatient, user.id);
+            loadSessions(firstPatient);
+          } else {
+            setPatient(null);
+            setSessions([]);
+            setAnalysis(analyzePatientCognitiveData([]));
           }
         })
-        .catch(() => {});
+        .catch(() => {
+          setPatient(null);
+        });
     }
 
     const unsubscribe = syncManager.subscribe(setSyncStatus);
     return () => unsubscribe();
-  }, [isLoggedIn, user, router]);
+  }, [isLoading, isLoggedIn, user, router]);
 
   const handleSyncNow = async () => {
     await syncManager.triggerSync();
-    const s = offlineDb.getSessions(patient.id);
-    setSessions(s);
-    setAnalysis(analyzePatientCognitiveData(s));
+    if (patient) {
+      const s = offlineDb.getSessions(patient.id);
+      setSessions(s);
+      setAnalysis(analyzePatientCognitiveData(s));
+    }
   };
 
   const doubleDecisionSessions = sessions.filter((s) => s.gameId === 'double_decision');
@@ -104,8 +137,8 @@ export default function CaregiverDashboardPage() {
 
   const hasSessions = sessions.length > 0;
   const caregiverDisplayName =
-    patient.caregiverName || (user?.fullName ? `${user.fullName}` : 'Anuradha Baruah');
-  const isNumericPhone = /\d{5,}/.test(patient.emergencyContact || '');
+    patient?.caregiverName || (user?.fullName ? `${user.fullName}` : 'Primary Caregiver');
+  const isNumericPhone = /\d{5,}/.test(patient?.emergencyContact || '');
 
   // Silent background prefetch for Doctor Report so clicking it is instant (0ms)
   useEffect(() => {
@@ -210,21 +243,167 @@ export default function CaregiverDashboardPage() {
 
   return (
     <div style={{ minHeight: 'calc(100vh - 74px)', background: '#f4f7f4', padding: '2rem 1.25rem 5rem' }}>
-      <div style={{ maxWidth: '1060px', margin: '0 auto' }}>
-        {/* Top Header Card (Neo-Brutalist Style, No Emojis) */}
-        <div
-          className="neo-card"
-          style={{
-            padding: '1.25rem 1.75rem',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '1.25rem',
-            marginBottom: '1.75rem',
-            background: '#ffffff',
-          }}
-        >
+      {!patient ? (
+        <div style={{ maxWidth: '1060px', margin: '0 auto' }}>
+          {/* Top Caregiver Header Card */}
+          <div
+            className="neo-card"
+            style={{
+              padding: '1.25rem 1.75rem',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '1.25rem',
+              marginBottom: '1.75rem',
+              background: '#ffffff',
+            }}
+          >
+            <div>
+              <h1
+                className="font-clash-bold"
+                style={{ fontSize: '1.65rem', fontWeight: 700, color: '#1c1b1b', margin: 0, textTransform: 'uppercase' }}
+              >
+                {user?.fullName || 'Caregiver Portal'}
+              </h1>
+              <div className="font-clash-regular" style={{ fontSize: '0.88rem', color: '#57534e', marginTop: '0.2rem' }}>
+                {user?.identifier || 'Authorized Caregiver'} • {user?.region || 'North Eastern Region'}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => setShowRegisterModal(true)}
+                className="neo-pill font-clash-semibold"
+                style={{
+                  background: '#214935',
+                  color: '#ffffff',
+                  border: '2px solid #1c1b1b',
+                  boxShadow: '2px 2px 0px #1c1b1b',
+                  cursor: 'pointer',
+                  padding: '0.45rem 0.95rem',
+                  fontSize: '0.92rem',
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                }}
+              >
+                <UserPlus size={15} />
+                <span>+ Register Patient</span>
+              </button>
+              <Link
+                href="/caregiver/patients"
+                className="neo-pill font-clash-semibold"
+                style={{ background: '#ffffff', color: '#1c1b1b', textDecoration: 'none', padding: '0.45rem 0.95rem', fontSize: '0.92rem', fontWeight: 600, textTransform: 'uppercase' }}
+              >
+                <Users size={15} />
+                <span>Directory</span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Zero State Hero */}
+          <div
+            className="neo-card"
+            style={{
+              background: '#ffffff',
+              padding: '3.5rem 2rem',
+              textAlign: 'center',
+              marginBottom: '2rem',
+            }}
+          >
+            <div
+              style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '18px',
+                background: '#e8f5e9',
+                border: '2px solid #1c1b1b',
+                boxShadow: '3px 3px 0px #1c1b1b',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#214935',
+                marginBottom: '1.25rem',
+              }}
+            >
+              <UserPlus size={32} />
+            </div>
+            <h2
+              className="font-clash-bold"
+              style={{ fontSize: '1.65rem', color: '#1c1b1b', margin: '0 0 0.6rem', textTransform: 'uppercase' }}
+            >
+              No Patients Registered Yet
+            </h2>
+            <p
+              className="font-clash-regular"
+              style={{ fontSize: '1rem', color: '#57534e', maxWidth: '580px', margin: '0 auto 1.75rem', lineHeight: 1.55 }}
+            >
+              SevaMitr provides continuous cognitive biomarker monitoring, circadian drift analysis, and early sundowning detection. Register your loved one or elder under your care to begin telemetry tracking.
+            </p>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => setShowRegisterModal(true)}
+                className="neo-pill font-clash-bold"
+                style={{
+                  background: '#214935',
+                  color: '#ffffff',
+                  border: '2px solid #1c1b1b',
+                  boxShadow: '2px 2px 0px #1c1b1b',
+                  padding: '0.75rem 1.6rem',
+                  fontSize: '0.95rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  cursor: 'pointer',
+                  textTransform: 'uppercase',
+                }}
+              >
+                <UserPlus size={18} />
+                <span>+ Register Your First Patient</span>
+              </button>
+              <Link
+                href="/caregiver/patients"
+                className="neo-pill font-clash-semibold"
+                style={{
+                  background: '#ffffff',
+                  color: '#1c1b1b',
+                  border: '2px solid #1c1b1b',
+                  boxShadow: '2px 2px 0px #1c1b1b',
+                  padding: '0.75rem 1.4rem',
+                  fontSize: '0.95rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  textDecoration: 'none',
+                  textTransform: 'uppercase',
+                }}
+              >
+                <Users size={18} />
+                <span>Open Patient Directory</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div style={{ maxWidth: '1060px', margin: '0 auto' }}>
+          {/* Top Header Card (Neo-Brutalist Style, No Emojis) */}
+          <div
+            className="neo-card"
+            style={{
+              padding: '1.25rem 1.75rem',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '1.25rem',
+              marginBottom: '1.75rem',
+              background: '#ffffff',
+            }}
+          >
           {/* Patient Quick Info */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
@@ -710,21 +889,24 @@ export default function CaregiverDashboardPage() {
           )}
         </div>
       </div>
+      )}
 
       {/* AI Clinical Handover Sheet Modal */}
-      <DoctorReportModal
-        isOpen={showDoctorReport}
-        onClose={() => setShowDoctorReport(false)}
-        patient={patient}
-        telemetry={{
-          sightSpeedMs: bestVisualSpeed ?? 220,
-          soundSweepsMs: bestAuditoryIsi ?? 95,
-          targetTrackerScore: targetAccuracy ?? 80,
-          hesitationMs: sessions.length > 0 ? Math.round(sessions.reduce((acc, s) => acc + s.hesitationMs, 0) / sessions.length) : 1400,
-          sessionsCount: sessions.length,
-          sundowningDivergencePct: analysis.sundowning.latencyDivergencePct,
-        }}
-      />
+      {patient && (
+        <DoctorReportModal
+          isOpen={showDoctorReport}
+          onClose={() => setShowDoctorReport(false)}
+          patient={patient}
+          telemetry={{
+            sightSpeedMs: bestVisualSpeed ?? 220,
+            soundSweepsMs: bestAuditoryIsi ?? 95,
+            targetTrackerScore: targetAccuracy ?? 80,
+            hesitationMs: sessions.length > 0 ? Math.round(sessions.reduce((acc, s) => acc + s.hesitationMs, 0) / sessions.length) : 1400,
+            sessionsCount: sessions.length,
+            sundowningDivergencePct: analysis.sundowning.latencyDivergencePct,
+          }}
+        />
+      )}
 
       {/* Register New Patient Modal */}
       <RegisterPatientModal
@@ -732,7 +914,7 @@ export default function CaregiverDashboardPage() {
         onClose={() => setShowRegisterModal(false)}
         onPatientRegistered={(newPatient) => {
           setPatient(newPatient);
-          offlineDb.savePatient(newPatient);
+          offlineDb.savePatient(newPatient, user?.id);
           const localSessions = offlineDb.getSessions(newPatient.id);
           setSessions(localSessions);
           setAnalysis(analyzePatientCognitiveData(localSessions));

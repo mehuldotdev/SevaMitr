@@ -25,6 +25,7 @@ import { brainHqAudio } from '@/lib/audio/brainHqAudio';
 import { offlineDb } from '@/lib/db/offlineDb';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { CelebrationModal } from '@/components/CelebrationModal';
+import { scoreSpeedMaze } from '@/lib/scoring/gradingEngine';
 import { generateRandomMaze, GeneratedMaze } from '@/lib/games/mazeGenerator';
 
 const TOTAL_ROUNDS = 3;
@@ -39,6 +40,7 @@ export default function SpeedMazeGame() {
   const [playerPosition, setPlayerPosition] = useState<[number, number]>(currentLevel.start);
   const [visitedCells, setVisitedCells] = useState<string[]>([]);
   const [score, setScore] = useState<number>(0);
+  const [biomarkerLabel, setBiomarkerLabel] = useState<string>('Planning Hesitation: 1250ms');
   const [isRoundComplete, setIsRoundComplete] = useState<boolean>(false);
   const [isGameOver, setIsGameOver] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
@@ -165,8 +167,7 @@ export default function SpeedMazeGame() {
       brainHqAudio.playSuccessChime();
       brainHqAudio.playBihuDhol();
 
-      const roundScore = Math.max(25, 45 - Math.round(stepDelta / 400) - (wallHitsRef.current * 2));
-      setScore((prev) => prev + roundScore);
+      setScore(Math.round((currentRound / TOTAL_ROUNDS) * 100));
 
       try {
         confetti({
@@ -200,7 +201,16 @@ export default function SpeedMazeGame() {
       ? Math.round(hesitationDurationsRef.current.reduce((a, b) => a + b, 0) / hesitationDurationsRef.current.length)
       : 1250;
 
-    const finalScore = Math.min(100, Math.max(50, score + 30 - wallHitsRef.current));
+    const { score: finalScore, biomarker } = scoreSpeedMaze(
+      TOTAL_ROUNDS,
+      TOTAL_ROUNDS,
+      wallHitsRef.current,
+      backtrackCountRef.current,
+      avgHesitationMs
+    );
+
+    setScore(finalScore);
+    setBiomarkerLabel(biomarker);
 
     offlineDb.saveSession({
       patientId: offlineDb.getPatient().id,
@@ -714,7 +724,7 @@ export default function SpeedMazeGame() {
               SCORE
             </span>
             <span className="font-clash-bold" style={{ fontSize: '0.92rem', color: '#6b21a8' }}>
-              {score} PTS
+              {score}%
             </span>
           </div>
         </div>
@@ -726,6 +736,7 @@ export default function SpeedMazeGame() {
         score={score}
         timeSpentSec={Math.max(10, Math.round((Date.now() - sessionStartTimeRef.current) / 1000))}
         message={`Visuomotor speed: ${avgSpeedMs}ms/step • 3/3 Trails Cleared • Wall touches: ${wallHitsRef.current}`}
+        biomarkerLabel={biomarkerLabel}
         onPlayAgain={() => {
           usedArchetypesRef.current = [];
           setCurrentRound(1);

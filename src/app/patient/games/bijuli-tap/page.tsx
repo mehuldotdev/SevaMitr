@@ -20,6 +20,7 @@ import { brainHqAudio } from '@/lib/audio/brainHqAudio';
 import { offlineDb } from '@/lib/db/offlineDb';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { CelebrationModal } from '@/components/CelebrationModal';
+import { scoreBijuliTap } from '@/lib/scoring/gradingEngine';
 
 interface TrialResult {
   trialIndex: number;
@@ -44,6 +45,8 @@ export default function BijuliTapGame() {
   const [feedbackMessage, setFeedbackMessage] = useState<string>('');
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [trialsResults, setTrialsResults] = useState<TrialResult[]>([]);
+  const [finalScore, setFinalScore] = useState<number>(85);
+  const [biomarkerLabel, setBiomarkerLabel] = useState<string>('Mean Reaction: 320ms');
 
   const stimulusStartTimeRef = useRef<number>(0);
   const waitTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -255,7 +258,12 @@ export default function BijuliTapGame() {
     const bestRT = validGoRTs.length > 0 ? Math.min(...validGoRTs) : 250;
 
     const totalDurationSec = Math.max(8, Math.round((Date.now() - sessionStartTimeRef.current) / 1000));
-    const calculatedScore = Math.min(100, Math.max(50, Math.round(120 - avgRT / 6)));
+    const { score: calculatedScore, biomarker } = scoreBijuliTap(
+      avgRT,
+      falseStartsCountRef.current
+    );
+    setFinalScore(calculatedScore);
+    setBiomarkerLabel(biomarker);
 
     brainHqAudio.playSuccessChime();
     brainHqAudio.playBihuDhol();
@@ -716,9 +724,10 @@ export default function BijuliTapGame() {
       <CelebrationModal
         isOpen={phase === 'COMPLETE'}
         gameTitle="Bijuli Tap (Psychomotor Speed)"
-        score={Math.min(100, Math.max(50, Math.round(120 - avgRT / 6)))}
+        score={finalScore}
         timeSpentSec={Math.max(10, Math.round((Date.now() - sessionStartTimeRef.current) / 1000))}
         message={`Average RT: ${avgRT}ms • Fastest: ${bestRT}ms • False starts: ${falseStartsCountRef.current}`}
+        biomarkerLabel={biomarkerLabel}
         onPlayAgain={() => {
           setCurrentTrial(1);
           setTrialsResults([]);
