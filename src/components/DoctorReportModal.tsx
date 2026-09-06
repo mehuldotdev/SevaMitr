@@ -68,8 +68,14 @@ export function extractPatientTelemetry(patientId?: string): TelemetryData {
       ? Math.round(sessions.reduce((acc, s) => acc + s.hesitationMs, 0) / sessions.length)
       : undefined;
 
-  const morning = sessions.filter((s) => s.timeOfDay === 'morning');
-  const evening = sessions.filter((s) => s.timeOfDay === 'evening' || s.timeOfDay === 'night');
+  const morning = sessions.filter((s) => {
+    const h = s.timestamp ? new Date(s.timestamp).getHours() : -1;
+    return (h >= 8 && h < 16) || (h === -1 && s.timeOfDay === 'morning');
+  });
+  const evening = sessions.filter((s) => {
+    const h = s.timestamp ? new Date(s.timestamp).getHours() : -1;
+    return (h >= 16 && h <= 23) || (h >= 0 && h < 8) || (h === -1 && (s.timeOfDay === 'evening' || s.timeOfDay === 'night' || s.timeOfDay === 'afternoon'));
+  });
   let sundowningDivergencePct: number | undefined = undefined;
   if (morning.length > 0 && evening.length > 0) {
     const avgMorning = morning.reduce((a, b) => a + b.hesitationMs, 0) / morning.length;

@@ -334,8 +334,8 @@ export function Navbar() {
               transition: 'var(--transition-smooth)',
               padding: 0,
             }}
-            title={copiedPhone ? 'Copied 9846198473!' : 'Call 9846198473 (Click to copy)'}
-            aria-label="Call emergency phone: 9846198473"
+            title={copiedPhone ? 'Copied Emergency Call (9846198473)!' : 'Emergency Call: 9846198473 (Click to copy)'}
+            aria-label="Emergency Call: 9846198473"
           >
             <PhoneCall size={18} />
           </button>

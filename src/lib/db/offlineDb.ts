@@ -65,7 +65,7 @@ export const DEFAULT_PATIENT: PatientProfile = {
   dementiaStage: 'Mild',
   emergencyContact: '9846198473',
   caregiverName: 'Anuradha Baruah',
-  caregiverPhone: '9846198473',
+  caregiverPhone: '+91 94350 12345',
 };
 
 export const DEFAULT_REMINDERS: ReminderItem[] = [

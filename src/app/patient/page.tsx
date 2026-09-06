@@ -1223,14 +1223,14 @@ function PatientPageContent() {
                 }}
               >
                 <div>
-                  <span className="neo-pill neo-pill-amber font-clash-wide" style={{ fontSize: '0.68rem', marginBottom: '0.75rem', display: 'inline-block' }}>
-                    CAREGIVER
+                  <span className="neo-pill font-clash-wide" style={{ fontSize: '0.68rem', marginBottom: '0.75rem', display: 'inline-block', background: '#fee2e2', color: '#991b1b', border: '1.5px solid #1c1b1b' }}>
+                    EMERGENCY CALL
                   </span>
                   <h3 className="font-clash-bold" style={{ fontSize: '1.3rem', color: '#1c1b1b', margin: '0 0 0.35rem', textTransform: 'uppercase' }}>
-                    {patient.caregiverName || 'Anuradha Baruah'}
+                    9846198473
                   </h3>
                   <p className="font-clash-regular" style={{ fontSize: '0.86rem', color: '#57534e', margin: 0 }}>
-                    Primary caregiver assistance & emergency hotline.
+                    24/7 urgent medical & rapid SOS emergency response.
                   </p>
                 </div>
 
@@ -1239,8 +1239,8 @@ function PatientPageContent() {
                   onClick={() => handleCopyPhone('9846198473')}
                   className="neo-card font-clash-semibold"
                   style={{
-                    background: copiedPhone ? '#dcfce7' : '#faebe6',
-                    color: copiedPhone ? '#15803d' : '#432406',
+                    background: copiedPhone ? '#dcfce7' : '#fee2e2',
+                    color: copiedPhone ? '#15803d' : '#991b1b',
                     padding: '0.65rem 1rem',
                     borderRadius: '10px',
                     display: 'flex',
@@ -1254,10 +1254,10 @@ function PatientPageContent() {
                     border: '1.5px solid #1c1b1b',
                     boxShadow: '2px 2px 0px #1c1b1b',
                   }}
-                  title="Click to copy caregiver phone 9846198473"
+                  title="Click to copy emergency number 9846198473"
                 >
                   <PhoneCall size={15} />
-                  <span>{copiedPhone ? 'Copied 9846198473!' : 'Call 9846198473'}</span>
+                  <span>{copiedPhone ? 'Copied Emergency Number!' : 'Emergency Call: 9846198473'}</span>
                 </button>
               </div>
 
@@ -1344,10 +1344,10 @@ function PatientPageContent() {
             border: '2px solid #1c1b1b',
             cursor: 'pointer',
           }}
-          title="Click to copy emergency number 9846198473"
+          title="Emergency Call: 9846198473 (Click to copy)"
         >
           <PhoneCall size={18} />
-          <span>{copiedPhone ? 'Copied!' : '9846198473'}</span>
+          <span>{copiedPhone ? 'Copied!' : 'Emergency Call'}</span>
         </button>
       </nav>
 

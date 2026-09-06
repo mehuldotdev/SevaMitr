@@ -42,7 +42,7 @@ export function CircadianTimelineChart({
         >
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#f57f17', fontWeight: 700, marginBottom: '0.5rem' }}>
             <Sun size={20} />
-            <span>Morning Window (08:00 - 12:00)</span>
+            <span>Morning Window (8 AM - 3 PM)</span>
           </div>
 
           <div style={{ fontSize: '2rem', fontWeight: 800, color: morningScore > 0 ? '#1b4332' : '#94a3b8' }}>
@@ -76,7 +76,7 @@ export function CircadianTimelineChart({
             }}
           >
             <Moon size={20} />
-            <span>Evening Window (17:00 - 21:00)</span>
+            <span>Evening Window (4 PM - 11 PM)</span>
           </div>
 
           <div style={{ fontSize: '2rem', fontWeight: 800, color: eveningScore > 0 ? (sundowningDetected ? '#c85a32' : '#1b4332') : '#94a3b8' }}>
@@ -133,7 +133,7 @@ export function CircadianTimelineChart({
           <>
             <CheckCircle size={22} style={{ flexShrink: 0 }} />
             <span>
-              <strong>Circadian Tracking Active:</strong> {morningLatencyMs > 0 ? 'Morning baseline recorded. Complete an evening session (17:00 - 21:00) to measure sundowning divergence.' : eveningLatencyMs > 0 ? 'Evening assessment recorded. Complete a morning session (08:00 - 12:00) to establish diurnal baseline.' : 'Play assessments during morning and evening windows to establish circadian profiling.'}
+              <strong>Circadian Tracking Active:</strong> {morningLatencyMs > 0 ? 'Morning baseline recorded. Complete an evening session (4 PM - 11 PM) to measure sundowning divergence.' : eveningLatencyMs > 0 ? 'Evening assessment recorded. Complete a morning session (8 AM - 3 PM) to establish diurnal baseline.' : 'Play assessments during morning (8 AM - 3 PM) and evening (4 PM - 11 PM) windows to establish circadian profiling.'}
             </span>
           </>
         )}

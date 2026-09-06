@@ -539,10 +539,10 @@ export default function CaregiverDashboardPage() {
                 alignItems: 'center',
                 gap: '0.35rem',
               }}
-              title="Click to copy emergency contact 9846198473"
+              title="Click to copy emergency call number 9846198473"
             >
               <PhoneCall size={14} />
-              <span>{copiedPhone ? 'Copied 9846198473!' : 'Call 9846198473'}</span>
+              <span>{copiedPhone ? 'Copied 9846198473!' : 'Emergency Call: 9846198473'}</span>
             </button>
           </div>
         </div>

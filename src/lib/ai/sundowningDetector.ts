@@ -77,16 +77,15 @@ export function analyzePatientCognitiveData(sessions: CognitiveSessionRecord[]):
     }
     totalLatency += (s.hesitationMs || 1500);
 
-    // Dynamic diurnal classification based on timeOfDay or session timestamp
+    // Diurnal classification: Morning (8 AM - 3 PM / 08:00 - 15:59) vs Evening (4 PM - 11 PM / 16:00 - 23:59)
     const sessionHour = s.timestamp ? new Date(s.timestamp).getHours() : -1;
     const isMorning =
-      s.timeOfDay === 'morning' ||
-      (sessionHour >= 5 && sessionHour < 13);
+      (sessionHour >= 8 && sessionHour < 16) ||
+      (sessionHour === -1 && s.timeOfDay === 'morning');
     const isEvening =
-      s.timeOfDay === 'evening' ||
-      s.timeOfDay === 'night' ||
-      s.timeOfDay === 'afternoon' ||
-      (sessionHour >= 13 || (sessionHour >= 0 && sessionHour < 5));
+      (sessionHour >= 16 && sessionHour <= 23) ||
+      (sessionHour >= 0 && sessionHour < 8) ||
+      (sessionHour === -1 && (s.timeOfDay === 'evening' || s.timeOfDay === 'night' || s.timeOfDay === 'afternoon'));
 
     if (isMorning) {
       morningSessions.push(s);
@@ -179,17 +178,17 @@ export function analyzePatientCognitiveData(sessions: CognitiveSessionRecord[]):
     sundowningDetected = latencyDivergencePct > 35 || (mScore - eScore) > 15;
     if (sundowningDetected) {
       recommendation =
-        'Sundowning pattern detected: significant reaction latency divergence and score decrease in evening window. Schedule critical cognitive activities before 14:00.';
+        'Sundowning pattern detected: significant reaction latency divergence and score decrease in evening window. Schedule critical cognitive activities before 15:00 (3 PM).';
     }
   } else if (morningSessions.length > 0 && eveningSessions.length === 0) {
     recommendation =
-      'Morning baseline established. Play an assessment in the evening window (17:00 - 21:00) to profile circadian stability.';
+      'Morning baseline established. Play an assessment in the evening window (4 PM - 11 PM) to profile circadian stability.';
   } else if (eveningSessions.length > 0 && morningSessions.length === 0) {
     recommendation =
-      'Evening baseline recorded. Play a morning assessment (08:00 - 12:00) to complete circadian comparison.';
+      'Evening baseline recorded. Play a morning assessment (8 AM - 3 PM) to complete circadian comparison.';
   } else {
     recommendation =
-      'Circadian rhythm baseline pending. Requires both morning (08:00 - 12:00) and evening (17:00 - 21:00) game sessions.';
+      'Circadian rhythm baseline pending. Requires both morning (8 AM - 3 PM) and evening (4 PM - 11 PM) game sessions.';
   }
 
   // Motor Hesitation
