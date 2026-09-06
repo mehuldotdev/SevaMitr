@@ -446,31 +446,43 @@ export default function PatientHomePage() {
           >
             <div
               style={{
-                width: '64px',
-                height: '64px',
-                borderRadius: '18px',
-                background: '#e8f5e9',
-                border: '2px solid #1c1b1b',
-                boxShadow: '3px 3px 0px #1c1b1b',
-                display: 'inline-flex',
+                display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#214935',
-                margin: '0 auto 1.25rem',
+                gap: '0.9rem',
+                marginBottom: '1.25rem',
+                flexWrap: 'wrap',
               }}
             >
-              <UserPlus size={32} />
-            </div>
+              <div
+                style={{
+                  width: '52px',
+                  height: '52px',
+                  borderRadius: '16px',
+                  background: '#e8f5e9',
+                  border: '2px solid #1c1b1b',
+                  boxShadow: '3px 3px 0px #1c1b1b',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#214935',
+                  flexShrink: 0,
+                }}
+              >
+                <UserPlus size={26} />
+              </div>
 
-            <div style={{ display: 'inline-flex', marginBottom: '0.75rem' }}>
               <span
                 className="neo-pill font-clash-wide"
                 style={{
                   background: '#214935',
                   color: '#ffffff',
-                  fontSize: '0.72rem',
-                  padding: '0.35rem 0.85rem',
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  padding: '0.45rem 1.15rem',
                   letterSpacing: '0.05em',
+                  display: 'inline-flex',
+                  alignItems: 'center',
                 }}
               >
                 PATIENT REGISTRATION REQUIRED
