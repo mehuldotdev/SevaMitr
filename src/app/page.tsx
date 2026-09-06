@@ -94,8 +94,8 @@ function HomeAuthContent() {
         <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
           <div
             style={{
-              width: '58px',
-              height: '58px',
+              width: '54px',
+              height: '54px',
               borderRadius: '16px',
               background: '#ffffff',
               border: '2px solid #1c1b1b',
@@ -104,9 +104,10 @@ function HomeAuthContent() {
               alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 0.75rem',
+              overflow: 'hidden',
             }}
           >
-            <SevaMitrIcon size={32} />
+            <SevaMitrIcon size={44} />
           </div>
           <h1
             className="font-clash-bold"

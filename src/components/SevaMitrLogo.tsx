@@ -21,9 +21,9 @@ export function SevaMitrLogo({
   style,
 }: SevaMitrLogoProps) {
   const iconSizeMap = {
-    sm: 22,
-    md: 32,
-    lg: 48,
+    sm: 28,
+    md: 38,
+    lg: 56,
   };
 
   const badgeSizeMap = {

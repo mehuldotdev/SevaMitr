@@ -46,20 +46,23 @@ The SevaMitr visual language blends **modern Neo-Brutalism** with **warm organic
 
 ## 2.5. Brand Identity & Logo Specification
 
-The **SevaMitr** brand emblem translates the dual themes of **"Seva"** (caring eldercare service) and **"Mitr"** (companion partnership) into an accessible, high-contrast Neo-Brutalist visual mark.
+The **SevaMitr** brand emblem features the **"Blooming Mind & Cognitive Flourishing"** emblem, visually expressing the rebirth of memory, neuroplasticity, and gentle eldercare.
 
 ### Symbolic Anatomy
-1. **The Caring Hands of Seva & Mitr**:
-   - **Left Wing (Kaziranga Forest Green `#214935`)**: Symbolizes unconditional care, grounding stability, and clinical therapeutic service (*Seva*).
-   - **Right Wing (Majuli Terracotta `#fe8357`)**: Symbolizes companion warmth, emotional empathy, and circadian alert presence (*Mitr*).
-   - Both hands cup inward in an embrace that forms an elder-friendly protective cradle.
-2. **The Radiant Cognitive Star (Neuro-Awakening Spark)**:
-   - Centered within the cradle is a vibrant 6-pointed star in **Muga Silk Amber (`#f59e0b`)** with a pure white core and soft ambient halo (`#fef3c7`).
-   - Represents neurological stimulation, memory retrieval, circadian lucidity, and cognitive vitality.
-3. **The Tea Garden Canopy Backdrop (`#e8f5ed` / `#2d6a4f`)**:
-   - A stylized triple-leaf crest rising behind the hands, grounding the platform's origin in the tea gardens and organic flora of Assam and North-East India.
-4. **Neo-Brutalist Outlines (`#1c1b1b`)**:
-   - Every shape is defined by bold `2.2px–2.5px` solid charcoal outlines with rounded joints, ensuring distinct legibility on 2G screens and low-resolution elder devices.
+1. **The Blooming Mind (Cognitive Flourishing)**:
+   - A smiling human head in clean profile, representing contentment, peace of mind, and dignity in eldercare.
+   - The top of the head opens into emergent flora: hand-drawn blooming flowers, sprouted leaves, and floating pollen/neural nodes.
+   - Symbolizes cognitive lucidity, memory cultivation, and neuro-rehabilitation through playful daily stimulation.
+2. **Circular Lilac / Lavender Field (`#EEB4F4` / `#E8A2F2`)**:
+   - A serene circular background providing gentle, low-arousal contrast that is elder-friendly and dementia-safe (aligned with circadian and sundowning calming palettes).
+3. **Neo-Brutalist Ink Contours (`#1c1b1b`)**:
+   - Crisp, high-contrast solid charcoal linework and solid dark leaf fills that maintain maximum legibility on low-resolution mobile displays and 2G connections.
+
+### Asset Paths & Usage
+- **Primary Web Logo**: `/logo.png` (512×512 PNG, centered with transparent exterior)
+- **Mobile PWA Icon**: `/icon.png` (192×192 PNG, PWA manifest maskable)
+- **Component**: `<SevaMitrIcon size={28} />` ([src/components/SevaMitrIcon.tsx](file:///Users/mehul/Downloads/SevaMitr/src/components/SevaMitrIcon.tsx))
+- **Brand Lockup**: `<SevaMitrLogo layout="horizontal" />` ([src/components/SevaMitrLogo.tsx](file:///Users/mehul/Downloads/SevaMitr/src/components/SevaMitrLogo.tsx))
 
 ### Production SVG Vector Mark
 ```html

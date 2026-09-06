@@ -95,9 +95,10 @@ export function Navbar() {
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
+              overflow: 'hidden',
             }}
           >
-            <SevaMitrIcon size={22} />
+            <SevaMitrIcon size={28} />
           </div>
           <span
             className="font-clash-bold brand-wordmark"
