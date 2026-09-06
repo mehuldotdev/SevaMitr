@@ -222,7 +222,7 @@ export default function SpeedMazeGame() {
       errorCount: wallHitsRef.current,
       confusionLoops: backtrackCountRef.current,
       completed: true,
-      timeOfDay: 'morning',
+      timeOfDay: new Date().getHours() >= 5 && new Date().getHours() < 13 ? 'morning' : 'evening',
     });
   };
 

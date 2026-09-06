@@ -63,9 +63,9 @@ export const DEFAULT_PATIENT: PatientProfile = {
   region: 'Tezpur, Assam',
   primaryLanguage: 'en',
   dementiaStage: 'Mild',
-  emergencyContact: '+91 94350 12345',
+  emergencyContact: '9846198473',
   caregiverName: 'Anuradha Baruah',
-  caregiverPhone: '+91 94350 98765',
+  caregiverPhone: '9846198473',
 };
 
 export const DEFAULT_REMINDERS: ReminderItem[] = [
@@ -231,7 +231,10 @@ class OfflineStorageEngine {
       }
 
       if (patientId) {
-        return list.filter((s) => s.patientId === patientId);
+        const filtered = list.filter((s) => s.patientId === patientId);
+        if (filtered.length > 0) return filtered;
+        // Fallback: If sessions were recorded under another/default ID, return list so progress is preserved
+        return list;
       }
       return list;
     } catch {

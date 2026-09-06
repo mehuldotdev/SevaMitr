@@ -45,21 +45,21 @@ export function CircadianTimelineChart({
             <span>Morning Window (08:00 - 12:00)</span>
           </div>
 
-          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#1b4332' }}>
-            {morningScore}%
+          <div style={{ fontSize: '2rem', fontWeight: 800, color: morningScore > 0 ? '#1b4332' : '#94a3b8' }}>
+            {morningScore > 0 ? `${morningScore}%` : '--'}
           </div>
           <div style={{ fontSize: '0.85rem', color: '#666', fontWeight: 600 }}>Avg Cognitive Score</div>
 
-          <div style={{ marginTop: '0.75rem', fontSize: '0.95rem', fontWeight: 700, color: '#2e7d32' }}>
-            Latency: {(morningLatencyMs / 1000).toFixed(1)}s
+          <div style={{ marginTop: '0.75rem', fontSize: '0.95rem', fontWeight: 700, color: morningLatencyMs > 0 ? '#2e7d32' : '#94a3b8' }}>
+            {morningLatencyMs > 0 ? `Latency: ${(morningLatencyMs / 1000).toFixed(1)}s` : 'Pending AM session'}
           </div>
         </div>
 
         {/* Evening Window */}
         <div
           style={{
-            background: sundowningDetected ? '#fff3e0' : '#ede7f6',
-            border: `2px solid ${sundowningDetected ? '#ffb74d' : '#d1c4e9'}`,
+            background: eveningScore > 0 && sundowningDetected ? '#fff3e0' : '#ede7f6',
+            border: `2px solid ${eveningScore > 0 && sundowningDetected ? '#ffb74d' : '#d1c4e9'}`,
             borderRadius: '16px',
             padding: '1.25rem',
             textAlign: 'center',
@@ -70,7 +70,7 @@ export function CircadianTimelineChart({
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.4rem',
-              color: sundowningDetected ? '#e65100' : '#4527a0',
+              color: eveningScore > 0 && sundowningDetected ? '#e65100' : '#4527a0',
               fontWeight: 700,
               marginBottom: '0.5rem',
             }}
@@ -79,8 +79,8 @@ export function CircadianTimelineChart({
             <span>Evening Window (17:00 - 21:00)</span>
           </div>
 
-          <div style={{ fontSize: '2rem', fontWeight: 800, color: sundowningDetected ? '#c85a32' : '#1b4332' }}>
-            {eveningScore}%
+          <div style={{ fontSize: '2rem', fontWeight: 800, color: eveningScore > 0 ? (sundowningDetected ? '#c85a32' : '#1b4332') : '#94a3b8' }}>
+            {eveningScore > 0 ? `${eveningScore}%` : '--'}
           </div>
           <div style={{ fontSize: '0.85rem', color: '#666', fontWeight: 600 }}>Avg Cognitive Score</div>
 
@@ -89,10 +89,12 @@ export function CircadianTimelineChart({
               marginTop: '0.75rem',
               fontSize: '0.95rem',
               fontWeight: 700,
-              color: sundowningDetected ? '#d32f2f' : '#2e7d32',
+              color: eveningLatencyMs > 0 ? (sundowningDetected ? '#d32f2f' : '#2e7d32') : '#94a3b8',
             }}
           >
-            Latency: {(eveningLatencyMs / 1000).toFixed(1)}s (+{divergencePct}%)
+            {eveningLatencyMs > 0
+              ? `Latency: ${(eveningLatencyMs / 1000).toFixed(1)}s${divergencePct ? ` (+${divergencePct}%)` : ''}`
+              : 'Pending PM session'}
           </div>
         </div>
       </div>
@@ -105,8 +107,8 @@ export function CircadianTimelineChart({
           gap: '0.75rem',
           padding: '0.85rem 1.15rem',
           borderRadius: '12px',
-          background: sundowningDetected ? '#fbe9e7' : '#e8f5e9',
-          border: `1px solid ${sundowningDetected ? '#ffab91' : '#a5d6a7'}`,
+          background: sundowningDetected ? '#fbe9e7' : (morningLatencyMs > 0 && eveningLatencyMs > 0) ? '#e8f5e9' : '#f0fdf4',
+          border: `1px solid ${sundowningDetected ? '#ffab91' : (morningLatencyMs > 0 && eveningLatencyMs > 0) ? '#a5d6a7' : '#bbf7d0'}`,
           color: sundowningDetected ? '#bf360c' : '#1b5e20',
           fontSize: '0.95rem',
           fontWeight: 600,
@@ -120,11 +122,18 @@ export function CircadianTimelineChart({
               exceed healthy threshold. Patient shows signs of circadian fatigue.
             </span>
           </>
-        ) : (
+        ) : (morningLatencyMs > 0 && eveningLatencyMs > 0) ? (
           <>
             <CheckCircle size={22} style={{ flexShrink: 0 }} />
             <span>
               <strong>Circadian Stability Normal:</strong> Morning and evening performance remain within balanced limits.
+            </span>
+          </>
+        ) : (
+          <>
+            <CheckCircle size={22} style={{ flexShrink: 0 }} />
+            <span>
+              <strong>Circadian Tracking Active:</strong> {morningLatencyMs > 0 ? 'Morning baseline recorded. Complete an evening session (17:00 - 21:00) to measure sundowning divergence.' : eveningLatencyMs > 0 ? 'Evening assessment recorded. Complete a morning session (08:00 - 12:00) to establish diurnal baseline.' : 'Play assessments during morning and evening windows to establish circadian profiling.'}
             </span>
           </>
         )}

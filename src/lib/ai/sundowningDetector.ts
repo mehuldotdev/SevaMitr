@@ -71,14 +71,27 @@ export function analyzePatientCognitiveData(sessions: CognitiveSessionRecord[]):
   let totalLatency = 0;
 
   sessions.forEach((s) => {
-    if (byGame[s.gameId]) {
-      byGame[s.gameId].push(Math.max(0, Math.min(100, s.score)));
+    const normGameId = (s.gameId || '').toLowerCase().replace(/-/g, '_');
+    if (byGame[normGameId]) {
+      byGame[normGameId].push(Math.max(0, Math.min(100, s.score)));
     }
-    totalLatency += s.hesitationMs;
+    totalLatency += (s.hesitationMs || 1500);
 
-    if (s.timeOfDay === 'morning') {
+    // Dynamic diurnal classification based on timeOfDay or session timestamp
+    const sessionHour = s.timestamp ? new Date(s.timestamp).getHours() : -1;
+    const isMorning =
+      s.timeOfDay === 'morning' ||
+      (sessionHour >= 5 && sessionHour < 13);
+    const isEvening =
+      s.timeOfDay === 'evening' ||
+      s.timeOfDay === 'night' ||
+      s.timeOfDay === 'afternoon' ||
+      (sessionHour >= 13 || (sessionHour >= 0 && sessionHour < 5));
+
+    if (isMorning) {
       morningSessions.push(s);
-    } else if (s.timeOfDay === 'evening' || s.timeOfDay === 'night') {
+    }
+    if (isEvening) {
       eveningSessions.push(s);
     }
   });
@@ -86,12 +99,34 @@ export function analyzePatientCognitiveData(sessions: CognitiveSessionRecord[]):
   const getAvg = (arr: number[]) =>
     arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null;
 
-  // Clinically map traditional and speed trial games to domains
-  const memScores = [...byGame.smriti_setu, ...byGame.doharani];
-  const execScores = [...byGame.speed_maze, ...byGame.doharani];
-  const attScores = [...byGame.rang_tanti, ...byGame.target_tracker, ...byGame.bijuli_tap];
-  const audScores = [...byGame.shabda_tarang, ...byGame.sound_sweeps];
-  const mathScores = [...byGame.bazaar_saathi, ...byGame.double_decision, ...byGame.bikhama_khoj];
+  // Clinically map traditional and 6 platform speed trial games to domains
+  const memScores = [
+    ...byGame.smriti_setu,
+    ...byGame.doharani,
+    ...byGame.target_tracker,
+    ...byGame.speed_maze,
+    ...byGame.double_decision,
+  ];
+  const execScores = [
+    ...byGame.speed_maze,
+    ...byGame.doharani,
+    ...byGame.bikhama_khoj,
+  ];
+  const attScores = [
+    ...byGame.rang_tanti,
+    ...byGame.target_tracker,
+    ...byGame.bijuli_tap,
+    ...byGame.double_decision,
+  ];
+  const audScores = [
+    ...byGame.shabda_tarang,
+    ...byGame.sound_sweeps,
+  ];
+  const mathScores = [
+    ...byGame.bazaar_saathi,
+    ...byGame.double_decision,
+    ...byGame.bikhama_khoj,
+  ];
 
   const memAvg = getAvg(memScores);
   const execAvg = getAvg(execScores);
@@ -109,6 +144,10 @@ export function analyzePatientCognitiveData(sessions: CognitiveSessionRecord[]):
       : Math.round(sessions.reduce((acc, s) => acc + Math.max(0, Math.min(100, s.score)), 0) / sessions.length);
 
   const overallDci = Math.max(0, Math.min(100, rawDci));
+
+  // Dynamic baseline fallback: if a specific domain is not yet played, calibrate to overall score
+  // so the radar chart remains clinically informative rather than collapsing to 0
+  const baselineEstimate = overallDci > 0 ? overallDci : 75;
 
   // Sundowning calculation: requires both morning and evening data
   const hasEnoughData = morningSessions.length > 0 && eveningSessions.length > 0;
@@ -138,18 +177,23 @@ export function analyzePatientCognitiveData(sessions: CognitiveSessionRecord[]):
   if (hasEnoughData && mLat > 0) {
     latencyDivergencePct = Math.round(((eLat - mLat) / mLat) * 100);
     sundowningDetected = latencyDivergencePct > 35 || (mScore - eScore) > 15;
-
     if (sundowningDetected) {
       recommendation =
-        'Noticeable evening cognitive fatigue detected. Reduce sensory clutter after 5:00 PM, maintain soft warm lighting, and serve calming warm tea before evening games.';
+        'Sundowning pattern detected: significant reaction latency divergence and score decrease in evening window. Schedule critical cognitive activities before 14:00.';
     }
-  } else if (!hasEnoughData) {
+  } else if (morningSessions.length > 0 && eveningSessions.length === 0) {
     recommendation =
-      'Circadian rhythm baseline pending. Requires both morning (08:00 - 12:00) and evening (17:00 - 20:00) game sessions.';
+      'Morning baseline established. Play an assessment in the evening window (17:00 - 21:00) to profile circadian stability.';
+  } else if (eveningSessions.length > 0 && morningSessions.length === 0) {
+    recommendation =
+      'Evening baseline recorded. Play a morning assessment (08:00 - 12:00) to complete circadian comparison.';
+  } else {
+    recommendation =
+      'Circadian rhythm baseline pending. Requires both morning (08:00 - 12:00) and evening (17:00 - 21:00) game sessions.';
   }
 
   // Motor Hesitation
-  const avgLatency = Math.round(totalLatency / sessions.length);
+  const avgLatency = Math.round(totalLatency / (sessions.length || 1));
   const hesitationScore = Math.min(10, Math.max(1, Math.round((avgLatency / 400) * 10) / 10));
   const motorStatus =
     hesitationScore > 6.5 ? 'high_hesitation' : hesitationScore > 4.0 ? 'moderate' : 'fluid';
@@ -158,11 +202,11 @@ export function analyzePatientCognitiveData(sessions: CognitiveSessionRecord[]):
     overallDci,
     sessionsCount: sessions.length,
     domainScores: {
-      memory: Math.max(0, Math.min(100, memAvg ?? 0)),
-      executive: Math.max(0, Math.min(100, execAvg ?? 0)),
-      attention: Math.max(0, Math.min(100, attAvg ?? 0)),
-      auditory: Math.max(0, Math.min(100, audAvg ?? 0)),
-      math: Math.max(0, Math.min(100, mathAvg ?? 0)),
+      memory: Math.max(0, Math.min(100, memAvg ?? baselineEstimate)),
+      executive: Math.max(0, Math.min(100, execAvg ?? baselineEstimate)),
+      attention: Math.max(0, Math.min(100, attAvg ?? baselineEstimate)),
+      auditory: Math.max(0, Math.min(100, audAvg ?? baselineEstimate)),
+      math: Math.max(0, Math.min(100, mathAvg ?? baselineEstimate)),
     },
     sundowning: {
       detected: sundowningDetected,

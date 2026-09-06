@@ -227,7 +227,7 @@ export default function DoubleDecisionGame() {
       errorCount: errorCountRef.current,
       confusionLoops: 0,
       completed: true,
-      timeOfDay: 'morning',
+      timeOfDay: new Date().getHours() >= 5 && new Date().getHours() < 13 ? 'morning' : 'evening',
     });
   };
 

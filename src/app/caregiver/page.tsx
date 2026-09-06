@@ -41,6 +41,7 @@ export default function CaregiverDashboardPage() {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(syncManager.getStatus());
   const [showDoctorReport, setShowDoctorReport] = useState<boolean>(false);
   const [showRegisterModal, setShowRegisterModal] = useState<boolean>(false);
+  const [copiedPhone, setCopiedPhone] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -66,8 +67,18 @@ export default function CaregiverDashboardPage() {
           .then((res) => res.json())
           .then((data) => {
             if (data.sessions && Array.isArray(data.sessions) && data.sessions.length > 0) {
-              setSessions(data.sessions);
-              setAnalysis(analyzePatientCognitiveData(data.sessions));
+              // Merge local + server sessions by ID without overwriting freshly played local sessions
+              const localMap = new Map(localSessions.map((s) => [s.id, s]));
+              data.sessions.forEach((srv: CognitiveSessionRecord) => {
+                if (!localMap.has(srv.id)) {
+                  localMap.set(srv.id, srv);
+                }
+              });
+              const merged = Array.from(localMap.values()).sort(
+                (a, b) => (b.timestamp || 0) - (a.timestamp || 0)
+              );
+              setSessions(merged);
+              setAnalysis(analyzePatientCognitiveData(merged));
             }
           })
           .catch(() => {});
@@ -103,16 +114,30 @@ export default function CaregiverDashboardPage() {
         });
     }
 
+    // Auto-refresh when new games are saved
+    const handleAutoReload = () => {
+      const activeP = offlineDb.getPatient(user?.id) || localPatient || DEFAULT_PATIENT;
+      loadSessions(activeP);
+    };
+    window.addEventListener('sevamitr_session_saved', handleAutoReload);
+    window.addEventListener('storage', handleAutoReload);
+
     const unsubscribe = syncManager.subscribe(setSyncStatus);
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      window.removeEventListener('sevamitr_session_saved', handleAutoReload);
+      window.removeEventListener('storage', handleAutoReload);
+    };
   }, [isLoading, isLoggedIn, user, router]);
 
-  const handleSyncNow = async () => {
-    await syncManager.triggerSync();
-    if (patient) {
-      const s = offlineDb.getSessions(patient.id);
-      setSessions(s);
-      setAnalysis(analyzePatientCognitiveData(s));
+  const handleCopyPhone = (num = '9846198473') => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(num).catch(() => {});
+    }
+    setCopiedPhone(true);
+    setTimeout(() => setCopiedPhone(false), 2500);
+    if (typeof window !== 'undefined' && /Mobi|Android|iPhone/i.test(navigator.userAgent)) {
+      window.location.href = `tel:${num}`;
     }
   };
 
@@ -479,25 +504,27 @@ export default function CaregiverDashboardPage() {
             </Link>
 
             <button
-              onClick={handleSyncNow}
-              disabled={syncStatus.isSyncing}
-              className="neo-pill neo-pill-green font-clash-semibold"
-              style={{ cursor: 'pointer', padding: '0.45rem 0.95rem', fontSize: '0.92rem', fontWeight: 600, textTransform: 'uppercase' }}
+              type="button"
+              onClick={() => handleCopyPhone('9846198473')}
+              className="neo-pill font-clash-semibold"
+              style={{
+                background: '#fee2e2',
+                color: '#991b1b',
+                border: '1.5px solid #1c1b1b',
+                cursor: 'pointer',
+                padding: '0.45rem 0.95rem',
+                fontSize: '0.92rem',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+              }}
+              title="Click to copy emergency contact 9846198473"
             >
-              <RefreshCw size={14} className={syncStatus.isSyncing ? 'spin-slow' : ''} />
-              <span>{syncStatus.isSyncing ? 'Syncing' : 'Sync'}</span>
+              <PhoneCall size={14} />
+              <span>{copiedPhone ? 'Copied 9846198473!' : 'Call 9846198473'}</span>
             </button>
-
-            {isNumericPhone && (
-              <a
-                href={`tel:${patient.emergencyContact}`}
-                className="neo-pill font-clash-semibold"
-                style={{ background: '#fee2e2', color: '#991b1b', textDecoration: 'none', padding: '0.45rem 0.95rem', fontSize: '0.92rem', fontWeight: 600, textTransform: 'uppercase' }}
-              >
-                <PhoneCall size={14} />
-                <span>Call</span>
-              </a>
-            )}
           </div>
         </div>
 

@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Play,
   PhoneCall,
@@ -33,15 +33,18 @@ import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { DoctorReportModal } from '@/components/DoctorReportModal';
 
-export default function PatientHomePage() {
+function PatientPageContent() {
   const { user, isLoggedIn, isLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialView = searchParams.get('view') === 'games' ? 'games' : 'home';
   const [patient, setPatient] = useState<PatientProfile | null>(null);
   const [checkingPatient, setCheckingPatient] = useState(true);
   const [mounted, setMounted] = useState(false);
   const { language, t } = useLanguage();
-  const [activeNav, setActiveNav] = useState<'games' | 'home'>('games');
+  const [activeNav, setActiveNav] = useState<'games' | 'home'>(initialView);
   const [showDoctorModal, setShowDoctorModal] = useState<boolean>(false);
+  const [copiedPhone, setCopiedPhone] = useState(false);
 
   // Add Patient Form state
   const [formName, setFormName] = useState('');
@@ -53,6 +56,26 @@ export default function PatientHomePage() {
   const [formEmergency, setFormEmergency] = useState('+91 94350 12345');
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const v = searchParams.get('view');
+    if (v === 'games') {
+      setActiveNav('games');
+    } else if (v === 'home') {
+      setActiveNav('home');
+    }
+  }, [searchParams]);
+
+  const handleCopyPhone = (num = '9846198473') => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(num).catch(() => {});
+    }
+    setCopiedPhone(true);
+    setTimeout(() => setCopiedPhone(false), 2500);
+    if (typeof window !== 'undefined' && /Mobi|Android|iPhone/i.test(navigator.userAgent)) {
+      window.location.href = `tel:${num}`;
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -1211,12 +1234,13 @@ export default function PatientHomePage() {
                   </p>
                 </div>
 
-                <a
-                  href={`tel:${patient.caregiverPhone}`}
+                <button
+                  type="button"
+                  onClick={() => handleCopyPhone('9846198473')}
                   className="neo-card font-clash-semibold"
                   style={{
-                    background: '#faebe6',
-                    color: '#432406',
+                    background: copiedPhone ? '#dcfce7' : '#faebe6',
+                    color: copiedPhone ? '#15803d' : '#432406',
                     padding: '0.65rem 1rem',
                     borderRadius: '10px',
                     display: 'flex',
@@ -1225,13 +1249,16 @@ export default function PatientHomePage() {
                     gap: '0.45rem',
                     fontSize: '0.92rem',
                     textTransform: 'uppercase',
-                    textDecoration: 'none',
+                    cursor: 'pointer',
                     marginTop: '1.25rem',
+                    border: '1.5px solid #1c1b1b',
+                    boxShadow: '2px 2px 0px #1c1b1b',
                   }}
+                  title="Click to copy caregiver phone 9846198473"
                 >
                   <PhoneCall size={15} />
-                  <span>Call {patient.caregiverPhone || '+91 94350 98765'}</span>
-                </a>
+                  <span>{copiedPhone ? 'Copied 9846198473!' : 'Call 9846198473'}</span>
+                </button>
               </div>
 
               {/* Card 3: Doctor Handover Report */}
@@ -1306,15 +1333,22 @@ export default function PatientHomePage() {
           <span>Games</span>
         </button>
 
-        <a
-          href={`tel:${patient.caregiverPhone}`}
+        <button
+          type="button"
+          onClick={() => handleCopyPhone('9846198473')}
           suppressHydrationWarning
           className="neo-dock-btn"
-          style={{ background: '#fee2e2', color: '#991b1b', border: '2px solid #1c1b1b' }}
+          style={{
+            background: copiedPhone ? '#dcfce7' : '#fee2e2',
+            color: copiedPhone ? '#15803d' : '#991b1b',
+            border: '2px solid #1c1b1b',
+            cursor: 'pointer',
+          }}
+          title="Click to copy emergency number 9846198473"
         >
           <PhoneCall size={18} />
-          <span>Emergency</span>
-        </a>
+          <span>{copiedPhone ? 'Copied!' : '9846198473'}</span>
+        </button>
       </nav>
 
       {/* Clinical Handover Report Modal */}
@@ -1326,5 +1360,13 @@ export default function PatientHomePage() {
         />
       )}
     </div>
+  );
+}
+
+export default function PatientHomePage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#f4f7f4' }} />}>
+      <PatientPageContent />
+    </Suspense>
   );
 }

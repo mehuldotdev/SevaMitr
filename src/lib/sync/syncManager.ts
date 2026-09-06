@@ -19,13 +19,18 @@ class SyncManager {
     if (typeof window !== 'undefined') {
       window.addEventListener('online', () => this.handleNetworkChange(true));
       window.addEventListener('offline', () => this.handleNetworkChange(false));
-      
-      // Periodic check every 30 seconds
+      window.addEventListener('sevamitr_session_saved', () => {
+        if (navigator.onLine && !this.isSyncing) {
+          this.triggerSync();
+        }
+      });
+
+      // Periodic check every 10 seconds automatically
       setInterval(() => {
         if (navigator.onLine && offlineDb.getUnsyncedCount() > 0 && !this.isSyncing) {
           this.triggerSync();
         }
-      }, 30000);
+      }, 10000);
     }
   }
 

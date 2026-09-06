@@ -9,15 +9,15 @@ import { LANGUAGE_LABELS } from '@/lib/audio/speechHelper';
 import { SupportedLanguage, useLanguage } from '@/lib/i18n/LanguageContext';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { offlineDb } from '@/lib/db/offlineDb';
-import { OfflineSyncBadge } from '@/components/OfflineSyncBadge';
 
 export function Navbar() {
   const pathname = usePathname();
   const { language, setLanguage, t } = useLanguage();
   const { user, isLoggedIn, logout } = useAuth();
   const [mounted, setMounted] = useState(false);
-  const [patientPhone, setPatientPhone] = useState('+919435098765');
+  const [patientPhone, setPatientPhone] = useState('9846198473');
   const [patientName, setPatientName] = useState('');
+  const [copiedPhone, setCopiedPhone] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -75,7 +75,7 @@ export function Navbar() {
       >
         {/* Left: Brand & Logo */}
         <Link
-          href="/"
+          href="/patient?view=home"
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -265,9 +265,6 @@ export function Navbar() {
             </Link>
           )}
 
-          {/* Network & Offline Cache Telemetry Badge */}
-          <OfflineSyncBadge />
-
           {/* Language Selector with Google Translate Icon */}
           <div
             style={{
@@ -307,9 +304,20 @@ export function Navbar() {
             </select>
           </div>
 
-          {/* Emergency Call (Compact Icon) */}
-          <a
-            href={`tel:${patientPhone}`}
+          {/* Emergency Call Button (Copies 9846198473) */}
+          <button
+            type="button"
+            onClick={() => {
+              const num = '9846198473';
+              if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                navigator.clipboard.writeText(num).catch(() => {});
+              }
+              setCopiedPhone(true);
+              setTimeout(() => setCopiedPhone(false), 2500);
+              if (typeof window !== 'undefined' && /Mobi|Android|iPhone/i.test(navigator.userAgent)) {
+                window.location.href = `tel:${num}`;
+              }
+            }}
             suppressHydrationWarning
             style={{
               width: '38px',
@@ -318,18 +326,19 @@ export function Navbar() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              background: '#fee2e2',
-              color: '#991b1b',
+              background: copiedPhone ? '#dcfce7' : '#fee2e2',
+              color: copiedPhone ? '#15803d' : '#991b1b',
               border: '2px solid #1c1b1b',
-              textDecoration: 'none',
+              cursor: 'pointer',
               boxShadow: '2px 2px 0px #1c1b1b',
               transition: 'var(--transition-smooth)',
+              padding: 0,
             }}
-            title={t('callCaregiver')}
-            aria-label="Call registered caregiver"
+            title={copiedPhone ? 'Copied 9846198473!' : 'Call 9846198473 (Click to copy)'}
+            aria-label="Call emergency phone: 9846198473"
           >
             <PhoneCall size={18} />
-          </a>
+          </button>
         </div>
       </div>
     </header>
