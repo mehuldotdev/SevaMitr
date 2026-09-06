@@ -63,7 +63,7 @@ export default function CaregiverDashboardPage() {
       setAnalysis(analyzePatientCognitiveData(localSessions));
 
       if (p.id) {
-        fetch(`/api/patients/${p.id}/sessions`)
+        fetch(`/api/patients/${p.id}/sessions?t=${Date.now()}`, { cache: 'no-store' })
           .then((res) => res.json())
           .then((data) => {
             if (data.sessions && Array.isArray(data.sessions) && data.sessions.length > 0) {
@@ -90,12 +90,13 @@ export default function CaregiverDashboardPage() {
     if (localPatient) {
       setPatient(localPatient);
       loadSessions(localPatient);
-    } else if (isDemo) {
-      setPatient(DEFAULT_PATIENT);
-      loadSessions(DEFAULT_PATIENT);
     } else {
-      // Fetch scoped patient list from PostgreSQL/API
-      fetch(`/api/patients?caregiverId=${encodeURIComponent(user.id)}`)
+      // Fetch scoped patient list from PostgreSQL/API (including any mobile-synced patients)
+      const fetchUrl = isDemo
+        ? `/api/patients?caregiverId=demo-caregiver-001&t=${Date.now()}`
+        : `/api/patients?caregiverId=${encodeURIComponent(user.id)}&t=${Date.now()}`;
+
+      fetch(fetchUrl, { cache: 'no-store' })
         .then((res) => res.json())
         .then((data) => {
           if (data.patients && Array.isArray(data.patients) && data.patients.length > 0) {
@@ -103,6 +104,9 @@ export default function CaregiverDashboardPage() {
             setPatient(firstPatient);
             offlineDb.savePatient(firstPatient, user.id);
             loadSessions(firstPatient);
+          } else if (isDemo) {
+            setPatient(DEFAULT_PATIENT);
+            loadSessions(DEFAULT_PATIENT);
           } else {
             setPatient(null);
             setSessions([]);
@@ -110,7 +114,12 @@ export default function CaregiverDashboardPage() {
           }
         })
         .catch(() => {
-          setPatient(null);
+          if (isDemo) {
+            setPatient(DEFAULT_PATIENT);
+            loadSessions(DEFAULT_PATIENT);
+          } else {
+            setPatient(null);
+          }
         });
     }
 
