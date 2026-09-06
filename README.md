@@ -3,7 +3,7 @@
 [![Production Deployment](https://img.shields.io/badge/Vercel-Live%20Deployment-000000?style=for-the-badge&logo=vercel)](https://seva-mitr.vercel.app)
 [![Next.js 14](https://img.shields.io/badge/Next.js%2014-App%20Router-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![Prisma ORM](https://img.shields.io/badge/Prisma-PostgreSQL-2D3748?style=for-the-badge&logo=prisma)](https://www.prisma.io/)
-[![Android APK](https://img.shields.io/badge/Android%20App-v1.2.1%20Release-214935?style=for-the-badge&logo=android)](https://github.com/sainiks/northeast-dementia-care/releases/latest)
+[![Android APK](https://img.shields.io/badge/Android%20App-v1.2.2%20Release-214935?style=for-the-badge&logo=android)](https://github.com/sainiks/northeast-dementia-care/releases/latest)
 
 **SevaMitr** is a digital health platform designed for early cognitive screening, continuous biomarker tracking, and circadian sundowning detection in elderly patients living with dementia in rural and low-resource regions of India (including the North Eastern Region).
 
@@ -18,7 +18,7 @@ Coupled with the **Northeast Dementia Care Flutter App**, SevaMitr bridges the g
 - **Patient Kiosk & Games**: [https://seva-mitr.vercel.app/patient](https://seva-mitr.vercel.app/patient)
 - **Patient Directory & Registry**: [https://seva-mitr.vercel.app/caregiver/patients](https://seva-mitr.vercel.app/caregiver/patients)
 - **Mobile App Repository**: [sainiks/northeast-dementia-care](https://github.com/sainiks/northeast-dementia-care)
-- **Latest Android Release (APK)**: [Download v1.2.1 APK (56.4 MB)](https://github.com/sainiks/northeast-dementia-care/releases/latest)
+- **Latest Android Release (APK)**: [Download v1.2.2 APK (56.2 MB)](https://github.com/sainiks/northeast-dementia-care/releases/latest)
 
 ---
 
@@ -106,14 +106,22 @@ flowchart LR
 If you are in a remote village without immediate PC access, you can set up everything from the phone:
 
 1. **Install App**: Open the APK and complete the initial patient setup on the phone. The app is **100% functional offline**.
-2. **Create Cloud Account in App**:
+2. **Unified Caregiver Registration in Mobile App**:
    - Tap the gold Lock 🔒 -> enter PIN `1234`.
-   - In the **"Caregiver Cloud Account"** card, tap **"Create Account"**.
-   - Enter your name, phone number, and password, then tap **Sign Up**.
-3. **Log in on the Website**:
-   - Open [https://seva-mitr.vercel.app/login](https://seva-mitr.vercel.app/login) on any browser.
+   - In the **"Caregiver Cloud Account & Authentication"** card, tap **"Sign In / Register with Phone & Password"**.
+   - The app presents the exact same Neo-Brutalist registration interface as the website:
+     - **Segmented Pill Switcher**: Switch to `REGISTER`.
+     - **Full Name**: Enter caregiver full name.
+     - **Caregiver Registration Banner**: Clinical guidance indicating patients are registered by caregivers.
+     - **Caregiver Designation**: Select *Family Member / Primary Caregiver*, *ASHA / Anganwadi Community Health Worker*, or *Clinical Doctor / Medical Officer*.
+     - **Phone / ID & Region**: Enter your phone number and district (e.g. `Kamrup Rural, Assam`).
+     - **Password**: Enter password with eye toggle.
+   - Tap **"CREATE ACCOUNT"** (or use the one-tap **"Use Hackathon Demo Account"**).
+   - Your local offline patient is immediately scoped and adopted into your cloud account!
+3. **Log in on the Website Anytime**:
+   - Open [https://seva-mitr.vercel.app](https://seva-mitr.vercel.app) on any browser.
    - Enter your phone number and password.
-   - Your patient and all game sessions played offline will automatically be visible on the web dashboard!
+   - Your patient profile, cognitive radar chart, and all 11 game session metrics are instantly live!
 
 ---
 
