@@ -16,6 +16,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   HelpCircle,
+  Gamepad2,
 } from 'lucide-react';
 import { PatientProfile, offlineDb } from '@/lib/db/offlineDb';
 import {
@@ -181,6 +182,15 @@ export function DoctorReportModal({
       ? reportData.sbar.recommendation.map((r: string, i: number) => `${i + 1}. ${r}`).join('\n')
       : reportData.sbar.recommendation;
 
+    const gamesText = reportData.recommendedGames?.length
+      ? reportData.recommendedGames
+          .map(
+            (g, i) =>
+              `${i + 1}. [${g.priority}] ${g.title} (${g.domain}) — ${g.frequency}\n   Rationale: ${g.clinicalRationale}`
+          )
+          .join('\n')
+      : 'Initial 4-game baseline circuit on Patient Kiosk.';
+
     const text = `SEVAMITR CLINICAL NEURO-TRIAGE REPORT
 Patient: ${patient.fullName} (${patient.age}y, ${patient.gender}) | Region: ${patient.region}
 DCI Score: ${reportData.dciScore}/100 | Triage: ${reportData.triageLabel}
@@ -191,6 +201,9 @@ SBAR CLINICAL SUMMARY:
 - Assessment: ${reportData.sbar.assessment}
 - Recommendation:
 ${recText}
+
+PRESCRIBED COGNITIVE INTERVENTIONS / RECOMMENDED GAMES:
+${gamesText}
 
 DOCTOR CONSULTATION QUESTIONS:
 1. ${reportData.doctorDiscussionPrompts?.[0] || 'Any noticeable changes in daily motor coordination or balance?'}
@@ -223,6 +236,7 @@ DOCTOR CONSULTATION QUESTIONS:
 
   return (
     <div
+      id="clinical-report-modal-overlay"
       style={{
         position: 'fixed',
         inset: 0,
@@ -238,6 +252,7 @@ DOCTOR CONSULTATION QUESTIONS:
       onClick={onClose}
     >
       <div
+        id="clinical-report-modal-card"
         className="neo-card"
         style={{
           background: '#ffffff',
@@ -291,6 +306,7 @@ DOCTOR CONSULTATION QUESTIONS:
 
           <button
             onClick={onClose}
+            className="no-print"
             style={{
               background: '#ffffff',
               border: '2px solid #1c1b1b',
@@ -566,6 +582,131 @@ DOCTOR CONSULTATION QUESTIONS:
             </div>
           </div>
 
+          {/* Prescribed Cognitive Interventions • Recommended Follow-Up Games */}
+          <div
+            className="neo-card"
+            style={{
+              background: '#ffffff',
+              padding: '1.25rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.85rem',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                borderBottom: '1px solid #e7e5e4',
+                paddingBottom: '0.5rem',
+                flexWrap: 'wrap',
+                gap: '0.5rem',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                <Gamepad2 size={17} color="#214935" />
+                <span className="font-clash-bold" style={{ fontSize: '0.98rem', textTransform: 'uppercase', color: '#1c1b1b' }}>
+                  Prescribed Cognitive Interventions • Recommended Games
+                </span>
+              </div>
+              <span className="font-clash-regular" style={{ fontSize: '0.74rem', color: '#78716c' }}>
+                Calibrated to psychophysical accuracy &amp; reaction latency
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
+              {reportData.recommendedGames && reportData.recommendedGames.length > 0 ? (
+                reportData.recommendedGames.map((game, idx) => {
+                  const isHigh = game.priority === 'HIGH';
+                  const isMedium = game.priority === 'MEDIUM';
+                  const badgeStyle = isHigh
+                    ? { bg: '#fee2e2', text: '#991b1b', border: '#991b1b', label: 'HIGH PRIORITY' }
+                    : isMedium
+                    ? { bg: '#fef3c7', text: '#92400e', border: '#b45309', label: 'TARGETED' }
+                    : { bg: '#e8f5e9', text: '#073220', border: '#214935', label: 'MAINTENANCE' };
+
+                  return (
+                    <div
+                      key={idx}
+                      className="neo-card"
+                      style={{
+                        padding: '0.85rem 1rem',
+                        background: '#fcfbf9',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        gap: '0.5rem',
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem', gap: '0.5rem' }}>
+                          <span
+                            className="font-clash-bold"
+                            style={{ fontSize: '0.95rem', color: '#1c1b1b', textTransform: 'uppercase' }}
+                          >
+                            {game.title}
+                          </span>
+                          <span
+                            className="neo-pill font-clash-wide"
+                            style={{
+                              background: badgeStyle.bg,
+                              color: badgeStyle.text,
+                              border: `1.5px solid ${badgeStyle.border}`,
+                              fontSize: '0.62rem',
+                              padding: '0.15rem 0.5rem',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {badgeStyle.label}
+                          </span>
+                        </div>
+
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.45rem' }}>
+                          <span
+                            className="neo-pill font-clash-semibold"
+                            style={{
+                              background: '#f4f7f4',
+                              color: '#57534e',
+                              fontSize: '0.66rem',
+                              border: '1px solid #1c1b1b',
+                              padding: '0.15rem 0.45rem',
+                            }}
+                          >
+                            {game.domain}
+                          </span>
+                          <span
+                            className="neo-pill font-clash-semibold"
+                            style={{
+                              background: '#e0f2fe',
+                              color: '#0369a1',
+                              fontSize: '0.66rem',
+                              border: '1px solid #0369a1',
+                              padding: '0.15rem 0.45rem',
+                            }}
+                          >
+                            ⏱ {game.frequency}
+                          </span>
+                        </div>
+
+                        <div
+                          className="font-clash-regular"
+                          style={{ fontSize: '0.82rem', color: '#44403c', lineHeight: 1.4 }}
+                        >
+                          {game.clinicalRationale}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="font-clash-regular" style={{ fontSize: '0.85rem', color: '#78716c', fontStyle: 'italic' }}>
+                  Complete baseline evaluation circuit (Bijuli Tap, Target Tracker, Sound Sweeps) to generate personalized game prescriptions.
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Doctor's Targeted Consultation Questions */}
           <div
             className="neo-card"
@@ -616,6 +757,7 @@ DOCTOR CONSULTATION QUESTIONS:
 
         {/* Modal Bottom Actions */}
         <div
+          className="no-print"
           style={{
             padding: '1rem 1.5rem',
             borderTop: '2px solid #1c1b1b',

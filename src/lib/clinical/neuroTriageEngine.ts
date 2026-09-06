@@ -1,3 +1,12 @@
+export interface RecommendedGame {
+  id: string;
+  title: string;
+  domain: string;
+  frequency: string;
+  clinicalRationale: string;
+  priority: 'HIGH' | 'MEDIUM' | 'MAINTENANCE';
+}
+
 export interface DoctorReportData {
   triageStatus: 'LOW_RISK' | 'BORDERLINE_MCI' | 'HIGH_IMPAIRMENT' | 'PENDING';
   triageLabel: string;
@@ -19,6 +28,7 @@ export interface DoctorReportData {
     dividedAttention: { accuracyPct: number; status: string; interpretation: string };
     motorHesitation: { latencyMs: number; status: string; interpretation: string };
   };
+  recommendedGames: RecommendedGame[];
   doctorDiscussionPrompts: string[];
   caregiverHomeSlip: string;
 }
@@ -108,6 +118,32 @@ export function computeDeterministicReport(
         'Have family members observed recent memory lapses or difficulty managing medications?',
         'Does the patient experience increased disorientation or restlessness during dusk or evening hours?',
         'Are there any vision, hearing, or fine-motor challenges affecting daily independence?',
+      ],
+      recommendedGames: [
+        {
+          id: 'bijuli-tap',
+          title: 'Bijuli Tap',
+          domain: 'Visual Processing Speed & UFOV',
+          frequency: '1 trial (5 mins) for baseline setup',
+          clinicalRationale: 'Measures millisecond psychomotor reaction time and peripheral detection.',
+          priority: 'HIGH',
+        },
+        {
+          id: 'target-tracker',
+          title: 'Target Tracker',
+          domain: 'Divided Visuospatial Attention',
+          frequency: '1 trial (5 mins) for baseline setup',
+          clinicalRationale: 'Evaluates parietal dorsal stream multiple-object tracking accuracy.',
+          priority: 'HIGH',
+        },
+        {
+          id: 'sound-sweeps',
+          title: 'Sound Sweeps',
+          domain: 'Auditory Frequency Discrimination',
+          frequency: '1 trial (5 mins) for baseline setup',
+          clinicalRationale: 'Tests temporal acoustic frequency sweep perception and inter-stimulus interval.',
+          priority: 'MEDIUM',
+        },
       ],
       caregiverHomeSlip,
     };
@@ -200,6 +236,104 @@ export function computeDeterministicReport(
   if (hesitationMs !== undefined) assessmentParts.push(`Motor Latency: ${hesitationMs}ms (${motorStatus})`);
   if (sundowningPct > 0) assessmentParts.push(`Circadian Divergence: +${sundowningPct}%`);
 
+  const recGames: RecommendedGame[] = [];
+
+  // 1. Attention & Object Tracking (Accuracy metric)
+  if (targetTrackerScore !== undefined) {
+    if (targetTrackerScore < 75) {
+      recGames.push({
+        id: 'target-tracker',
+        title: 'Target Tracker',
+        domain: 'Divided Attention (MOT)',
+        frequency: '8-10 mins daily',
+        clinicalRationale: `Accuracy at ${targetTrackerScore}% reflects attentional bottleneck; retrains parietal dynamic tracking.`,
+        priority: 'HIGH',
+      });
+    } else if (targetTrackerScore < 85) {
+      recGames.push({
+        id: 'target-tracker',
+        title: 'Target Tracker',
+        domain: 'Divided Attention (MOT)',
+        frequency: '5-8 mins daily',
+        clinicalRationale: `Accuracy at ${targetTrackerScore}%; strengthens multi-object tracking stability.`,
+        priority: 'MEDIUM',
+      });
+    }
+  }
+
+  // 2. Visual Speed & UFOV (Reaction latency metric)
+  if (sightSpeedMs !== undefined) {
+    if (sightSpeedMs > 240) {
+      recGames.push({
+        id: 'bijuli-tap',
+        title: 'Bijuli Tap',
+        domain: 'Visual Speed & UFOV',
+        frequency: '8-10 mins daily (morning)',
+        clinicalRationale: `Visual latency at ${sightSpeedMs}ms (threshold <200ms); improves central & peripheral reaction speed.`,
+        priority: 'HIGH',
+      });
+    } else if (sightSpeedMs > 190) {
+      recGames.push({
+        id: 'double-decision',
+        title: 'Double Decision',
+        domain: 'Central-Peripheral Integration',
+        frequency: '6-8 mins daily',
+        clinicalRationale: `Visual latency at ${sightSpeedMs}ms; expands useful field of view to reduce fall risk.`,
+        priority: 'MEDIUM',
+      });
+    }
+  }
+
+  // 3. Auditory Frequency Discrimination (Acoustic latency metric)
+  if (soundSweepsMs !== undefined) {
+    if (soundSweepsMs > 110) {
+      recGames.push({
+        id: 'sound-sweeps',
+        title: 'Sound Sweeps',
+        domain: 'Auditory Frequency Discrimination',
+        frequency: '8 mins daily in quiet room',
+        clinicalRationale: `Auditory ISI at ${soundSweepsMs}ms (normal <100ms); sharpens primary auditory cortex frequency sweep discrimination.`,
+        priority: soundSweepsMs > 135 ? 'HIGH' : 'MEDIUM',
+      });
+    }
+  }
+
+  // 4. Motor Latency / Visuomotor Planning (Hesitation metric)
+  if (hesitationMs !== undefined && hesitationMs > 1300) {
+    recGames.push({
+      id: 'speed-maze',
+      title: 'Speed Maze',
+      domain: 'Visuomotor Planning & Navigation',
+      frequency: '10 mins daily',
+      clinicalRationale: `Motor hesitation latency is ${hesitationMs}ms; activates frontostriatal motor planning circuits.`,
+      priority: hesitationMs > 1800 ? 'HIGH' : 'MEDIUM',
+    });
+  }
+
+  // If patient has high performance or fewer than 2 deficits, add maintenance games
+  if (recGames.length < 2) {
+    recGames.push({
+      id: 'double-decision',
+      title: 'Double Decision',
+      domain: 'Useful Field of View (UFOV)',
+      frequency: '5 mins daily maintenance',
+      clinicalRationale: 'Maintains rapid central visual recognition and peripheral spatial localization.',
+      priority: 'MAINTENANCE',
+    });
+  }
+  if (recGames.length < 2) {
+    recGames.push({
+      id: 'bikhama-khoj',
+      title: 'Bikhama Khoj',
+      domain: 'Visual Feature Binding',
+      frequency: '5 mins daily maintenance',
+      clinicalRationale: 'Preserves occipital-temporal feature discrimination and visual search accuracy.',
+      priority: 'MAINTENANCE',
+    });
+  }
+
+  const recommendedGames = recGames.slice(0, 3);
+
   return {
     triageStatus,
     triageLabel,
@@ -236,6 +370,7 @@ export function computeDeterministicReport(
         interpretation: hesitationMs === undefined ? 'Motor latency trial pending.' : hesitationMs > 1300 ? 'Prolonged response initiation suggests psychomotor slowing or mild extrapyramidal delay.' : 'Smooth, fluid motor initiation without signs of hesitation.',
       },
     },
+    recommendedGames,
     doctorDiscussionPrompts: [
       'Have you noticed recent hesitancy or balance issues when walking in dim light or evening hours?',
       'Does the patient struggle to follow conversations in noisy environments or family gatherings?',

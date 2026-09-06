@@ -80,13 +80,28 @@ Provide high-yield OPD clinical details in strict JSON matching schema:
     "dividedAttention": { "accuracyPct": ${telemetry.targetTrackerScore || 0}, "status": "${telemetry.targetTrackerScore ? 'Preserved | Mild Bottleneck | Impaired' : 'Not Tested'}", "interpretation": "1 concise clinical note" },
     "motorHesitation": { "latencyMs": ${telemetry.hesitationMs || 0}, "status": "${telemetry.hesitationMs ? 'Fluid | Moderate Hesitation | High Hesitation' : 'Not Tested'}", "interpretation": "1 concise clinical note" }
   },
+  "recommendedGames": [
+    {
+      "id": "bijuli-tap | double-decision | sound-sweeps | target-tracker | speed-maze | bikhama-khoj",
+      "title": "Clean Game Name",
+      "domain": "Targeted Cognitive Domain",
+      "frequency": "Concise prescription dosage (e.g. '8-10 mins daily before 3 PM')",
+      "clinicalRationale": "1 concise line tying to patient's specific accuracy or reaction latency",
+      "priority": "HIGH | MEDIUM | MAINTENANCE"
+    }
+  ],
   "doctorDiscussionPrompts": [
     "Targeted OPD clinical question 1 to ask family of ${patient.fullName} in clinic",
     "Targeted OPD clinical question 2 to ask family of ${patient.fullName} in clinic",
     "Targeted OPD clinical question 3 to ask family of ${patient.fullName} in clinic"
   ],
   "caregiverHomeSlip": "Warm 2-line family note mentioning '${patient.fullName}' in language '${language}'."
-}`;
+}
+
+CRITICAL RULES:
+- Keep all fields concise, high-yield, and professional for a rapid 30-second OPD physician review.
+- In 'recommendedGames', provide exactly 2-3 games prioritized by the patient's weakest accuracy/latency metrics. Valid game IDs: bijuli-tap (Visual Speed/UFOV), double-decision (Useful Field of View), sound-sweeps (Auditory Discrimination), target-tracker (Divided Visuospatial Attention), speed-maze (Visuomotor Planning & Navigation), bikhama-khoj (Visual Search & Feature Binding).
+- If hasRecordedData is false, recommend baseline initiation on bijuli-tap, target-tracker, and sound-sweeps.`;
 
       const primaryModel = 'gemini-3.1-flash-lite';
 

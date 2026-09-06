@@ -707,3 +707,53 @@ a {
   letter-spacing: -0.02em;
   font-feature-settings: 'tnum' on, 'lnum' on;
 }
+
+/* ==========================================================================
+   Clinical Doctor Report Print & PDF Styles
+   Ensures window.print() exports clean, high-density hospital triage slip
+   ========================================================================== */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #1c1b1b !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Hide everything outside the report modal overlay */
+  body > *:not(#clinical-report-modal-overlay) {
+    display: none !important;
+  }
+
+  #clinical-report-modal-overlay {
+    position: absolute !important;
+    inset: 0 !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    z-index: 99999 !important;
+  }
+
+  #clinical-report-modal-card {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: none !important;
+    border: 2px solid #1c1b1b !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 8mm 10mm;
+  }
+}
