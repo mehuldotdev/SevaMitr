@@ -24,7 +24,7 @@ export async function GET(req: Request) {
     if (prisma) {
       try {
         const allPrisma = await prisma.patient.findMany({
-          include: { caregiver: true },
+          include: { caregiver: true, _count: { select: { sessions: true } } },
           orderBy: { createdAt: 'desc' },
         });
         if (allPrisma.length > 0) {
@@ -42,6 +42,7 @@ export async function GET(req: Request) {
                 caregiverId: p.caregiverId,
                 caregiverName: p.caregiver?.name || 'Primary Caregiver',
                 caregiverPhone: p.caregiver?.phone || p.emergencyContact || '',
+                sessionsCount: (p as any)._count?.sessions ?? 0,
               })),
             },
             { headers: { ...corsHeaders, 'Cache-Control': 'no-store, max-age=0' } }
@@ -89,7 +90,11 @@ export async function GET(req: Request) {
 
       const patients = await prisma.patient.findMany({
         where: { OR: orConditions },
-        include: { caregiver: true, dailyMetrics: { take: 1, orderBy: { date: 'desc' } } },
+        include: {
+          caregiver: true,
+          dailyMetrics: { take: 1, orderBy: { date: 'desc' } },
+          _count: { select: { sessions: true } },
+        },
         orderBy: { createdAt: 'desc' },
       });
       if (patients.length > 0) {
@@ -105,6 +110,7 @@ export async function GET(req: Request) {
           caregiverId: p.caregiverId,
           caregiverName: p.caregiver?.name || 'Primary Caregiver',
           caregiverPhone: p.caregiver?.phone || p.emergencyContact || '',
+          sessionsCount: (p as any)._count?.sessions ?? 0,
         }));
         return NextResponse.json(
           { patients: formattedPatients },
@@ -227,9 +233,29 @@ export async function POST(req: Request) {
           },
         });
 
+        // Check if an existing patient record should be reused to avoid duplicates
+        let existingPatientRecord = null;
+        if (id?.trim()) {
+          existingPatientRecord = await prisma.patient.findUnique({
+            where: { id: id.trim() },
+          });
+        }
+        if (!existingPatientRecord) {
+          // Check if there's already a patient with the same name under this caregiver
+          existingPatientRecord = await prisma.patient.findFirst({
+            where: {
+              caregiverId: caregiver.id,
+              fullName: { equals: fullName.trim(), mode: 'insensitive' },
+            },
+            orderBy: { createdAt: 'asc' }, // Keep the original primary record
+          });
+        }
+
+        const effectivePatientId = existingPatientRecord?.id || safePatientId;
+
         // Create or update Patient linked directly to Caregiver
         const createdPatient = await prisma.patient.upsert({
-          where: { id: safePatientId },
+          where: { id: effectivePatientId },
           update: {
             fullName: fullName.trim(),
             age: parsedAge,
@@ -241,7 +267,7 @@ export async function POST(req: Request) {
             caregiverId: caregiver.id,
           },
           create: {
-            id: safePatientId,
+            id: effectivePatientId,
             fullName: fullName.trim(),
             age: parsedAge,
             gender: safeGender,

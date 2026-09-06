@@ -80,7 +80,7 @@ export async function POST(request: Request) {
               confusionLoops: s.confusionLoops || 0,
               completed: s.completed ?? true,
               timeOfDay: s.timeOfDay || 'morning',
-              clientSyncedAt: new Date(),
+              clientSyncedAt: s.timestamp ? new Date(Number(s.timestamp)) : new Date(),
             },
           });
         }

@@ -19,6 +19,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   const patientId = params.id;
+  const { searchParams } = new URL(request.url);
+  const caregiverId = searchParams.get('caregiverId');
 
   if (!patientId) {
     return NextResponse.json(
@@ -27,25 +29,62 @@ export async function GET(
     );
   }
 
-  let sessions: any[] = [];
+  let rawSessions: any[] = [];
 
   if (prisma) {
     try {
-      const dbSessions = await prisma.cognitiveSession.findMany({
-        where: { patientId },
-        orderBy: { createdAt: 'desc' },
-      });
-      if (dbSessions && dbSessions.length > 0) {
-        sessions = dbSessions;
+      if (patientId === 'all' && caregiverId) {
+        rawSessions = await prisma.cognitiveSession.findMany({
+          where: {
+            patient: {
+              OR: [
+                { caregiverId },
+                { caregiver: { id: caregiverId } },
+                { caregiver: { phone: { contains: caregiverId.replace(/[^0-9]/g, '') } } },
+              ],
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+      } else {
+        rawSessions = await prisma.cognitiveSession.findMany({
+          where: { patientId },
+          orderBy: { createdAt: 'desc' },
+        });
       }
     } catch (e) {
       console.warn('PostgreSQL fetch error for patient sessions:', e);
     }
   }
 
-  if (sessions.length === 0) {
-    sessions = serverSessionStore.getSessions(patientId);
+  if (rawSessions.length === 0) {
+    rawSessions = serverSessionStore.getSessions(patientId);
   }
+
+  const sessions = rawSessions.map((s: any) => ({
+    id: s.id,
+    patientId: s.patientId,
+    gameId: s.gameId,
+    gameTitle: s.gameTitle || s.gameId,
+    difficultyLevel: s.difficultyLevel || 1,
+    score: s.score || 0,
+    durationSec: s.durationSec || 60,
+    hesitationMs: s.hesitationMs || 1500,
+    errorCount: s.errorCount || 0,
+    confusionLoops: s.confusionLoops || 0,
+    completed: s.completed ?? true,
+    timeOfDay: s.timeOfDay || 'morning',
+    timestamp: s.timestamp
+      ? Number(s.timestamp)
+      : s.clientSyncedAt
+      ? new Date(s.clientSyncedAt).getTime()
+      : s.createdAt
+      ? new Date(s.createdAt).getTime()
+      : Date.now(),
+    synced: true,
+    clientSyncedAt: s.clientSyncedAt,
+    createdAt: s.createdAt,
+  }));
 
   return NextResponse.json(
     { sessions },

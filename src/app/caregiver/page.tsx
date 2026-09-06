@@ -43,6 +43,8 @@ export default function CaregiverDashboardPage() {
   const [showRegisterModal, setShowRegisterModal] = useState<boolean>(false);
   const [copiedPhone, setCopiedPhone] = useState(false);
 
+  const [patientsList, setPatientsList] = useState<any[]>([]);
+
   useEffect(() => {
     setMounted(true);
     if (!isLoading && !isLoggedIn) {
@@ -63,15 +65,26 @@ export default function CaregiverDashboardPage() {
       setAnalysis(analyzePatientCognitiveData(localSessions));
 
       if (p.id) {
-        fetch(`/api/patients/${p.id}/sessions?t=${Date.now()}`, { cache: 'no-store' })
+        fetch(`/api/patients/${p.id}/sessions?caregiverId=${encodeURIComponent(user.id)}&t=${Date.now()}`, { cache: 'no-store' })
           .then((res) => res.json())
           .then((data) => {
             if (data.sessions && Array.isArray(data.sessions) && data.sessions.length > 0) {
               // Merge local + server sessions by ID without overwriting freshly played local sessions
               const localMap = new Map(localSessions.map((s) => [s.id, s]));
-              data.sessions.forEach((srv: CognitiveSessionRecord) => {
+              data.sessions.forEach((srv: any) => {
+                const cleanSrv: CognitiveSessionRecord = {
+                  ...srv,
+                  timestamp: srv.timestamp
+                    ? Number(srv.timestamp)
+                    : srv.clientSyncedAt
+                    ? new Date(srv.clientSyncedAt).getTime()
+                    : srv.createdAt
+                    ? new Date(srv.createdAt).getTime()
+                    : Date.now(),
+                  synced: true,
+                };
                 if (!localMap.has(srv.id)) {
-                  localMap.set(srv.id, srv);
+                  localMap.set(srv.id, cleanSrv);
                 }
               });
               const merged = Array.from(localMap.values()).sort(
@@ -85,43 +98,62 @@ export default function CaregiverDashboardPage() {
       }
     };
 
-    // 1. Try local caregiver-scoped patient
+    // 1. Initial attempt: check local caregiver-scoped patient
     const localPatient = offlineDb.getPatient(user.id);
     if (localPatient) {
       setPatient(localPatient);
       loadSessions(localPatient);
-    } else {
-      // Fetch scoped patient list from PostgreSQL/API (including any mobile-synced patients)
-      const fetchUrl = isDemo
-        ? `/api/patients?caregiverId=demo-caregiver-001&t=${Date.now()}`
-        : `/api/patients?caregiverId=${encodeURIComponent(user.id)}&t=${Date.now()}`;
-
-      fetch(fetchUrl, { cache: 'no-store' })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.patients && Array.isArray(data.patients) && data.patients.length > 0) {
-            const firstPatient = data.patients[0];
-            setPatient(firstPatient);
-            offlineDb.savePatient(firstPatient, user.id);
-            loadSessions(firstPatient);
-          } else if (isDemo) {
-            setPatient(DEFAULT_PATIENT);
-            loadSessions(DEFAULT_PATIENT);
-          } else {
-            setPatient(null);
-            setSessions([]);
-            setAnalysis(analyzePatientCognitiveData([]));
-          }
-        })
-        .catch(() => {
-          if (isDemo) {
-            setPatient(DEFAULT_PATIENT);
-            loadSessions(DEFAULT_PATIENT);
-          } else {
-            setPatient(null);
-          }
-        });
     }
+
+    // 2. Fetch scoped patient list from PostgreSQL/API (including any mobile-synced patients)
+    const fetchUrl = isDemo
+      ? `/api/patients?caregiverId=demo-caregiver-001&t=${Date.now()}`
+      : `/api/patients?caregiverId=${encodeURIComponent(user.id)}&t=${Date.now()}`;
+
+    fetch(fetchUrl, { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.patients && Array.isArray(data.patients) && data.patients.length > 0) {
+          setPatientsList(data.patients);
+
+          // Find if currently loaded local patient is in the list
+          const existingMatch = data.patients.find((p: any) => p.id === localPatient?.id);
+
+          // Find patient with most sessions
+          const withSessions = [...data.patients].sort(
+            (a: any, b: any) => (b.sessionsCount || 0) - (a.sessionsCount || 0)
+          );
+          const patientWithMostSessions = withSessions[0];
+
+          // If local patient has 0 sessions or is not in list, but another patient has sessions, prefer the one with sessions!
+          const shouldSwitchToBest =
+            !existingMatch ||
+            ((existingMatch.sessionsCount === 0 || existingMatch.sessionsCount === undefined) &&
+              (patientWithMostSessions?.sessionsCount || 0) > 0);
+
+          const target = shouldSwitchToBest ? patientWithMostSessions : (existingMatch || data.patients[0]);
+
+          if (target) {
+            setPatient(target);
+            offlineDb.savePatient(target, user.id);
+            loadSessions(target);
+          }
+        } else if (isDemo) {
+          setPatient(DEFAULT_PATIENT);
+          setPatientsList([DEFAULT_PATIENT]);
+          loadSessions(DEFAULT_PATIENT);
+        } else if (!localPatient) {
+          setPatient(null);
+          setSessions([]);
+          setAnalysis(analyzePatientCognitiveData([]));
+        }
+      })
+      .catch(() => {
+        if (isDemo && !localPatient) {
+          setPatient(DEFAULT_PATIENT);
+          loadSessions(DEFAULT_PATIENT);
+        }
+      });
 
     // Auto-refresh when new games are saved
     const handleAutoReload = () => {
@@ -474,6 +506,83 @@ export default function CaregiverDashboardPage() {
             <div className="font-clash-regular" suppressHydrationWarning style={{ fontSize: '0.88rem', color: '#57534e', marginTop: '0.2rem', fontWeight: 400 }}>
               {patient.age}y • {patient.region} • Caregiver: <strong>{caregiverDisplayName}</strong>
             </div>
+            {patientsList.length > 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.65rem', flexWrap: 'wrap' }}>
+                <span className="font-clash-semibold" style={{ fontSize: '0.78rem', color: '#57534e', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Patient Profile:
+                </span>
+                <select
+                  value={patient.id}
+                  onChange={(e) => {
+                    const sel = patientsList.find((p) => p.id === e.target.value);
+                    if (sel) {
+                      setPatient(sel);
+                      offlineDb.savePatient(sel, user?.id);
+                      const localSessions = offlineDb.getSessions(sel.id);
+                      setSessions(localSessions);
+                      setAnalysis(analyzePatientCognitiveData(localSessions));
+                      fetch(`/api/patients/${sel.id}/sessions?caregiverId=${encodeURIComponent(user?.id || '')}&t=${Date.now()}`, { cache: 'no-store' })
+                        .then((res) => res.json())
+                        .then((data) => {
+                          if (data.sessions && Array.isArray(data.sessions)) {
+                            const localMap = new Map(localSessions.map((s) => [s.id, s]));
+                            data.sessions.forEach((srv: any) => {
+                              const cleanSrv: CognitiveSessionRecord = {
+                                ...srv,
+                                timestamp: srv.timestamp
+                                  ? Number(srv.timestamp)
+                                  : srv.clientSyncedAt
+                                  ? new Date(srv.clientSyncedAt).getTime()
+                                  : srv.createdAt
+                                  ? new Date(srv.createdAt).getTime()
+                                  : Date.now(),
+                                synced: true,
+                              };
+                              localMap.set(srv.id, cleanSrv);
+                            });
+                            const merged = Array.from(localMap.values()).sort(
+                              (a, b) => (b.timestamp || 0) - (a.timestamp || 0)
+                            );
+                            setSessions(merged);
+                            setAnalysis(analyzePatientCognitiveData(merged));
+                          }
+                        })
+                        .catch(() => {});
+                    }
+                  }}
+                  className="font-clash-bold"
+                  style={{
+                    padding: '0.35rem 0.75rem',
+                    borderRadius: '10px',
+                    border: '2px solid #1c1b1b',
+                    boxShadow: '2px 2px 0px #1c1b1b',
+                    background: '#f4f7f4',
+                    fontSize: '0.82rem',
+                    color: '#1c1b1b',
+                    outline: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {patientsList.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.fullName} ({p.age}y - {p.sessionsCount ?? 0} sessions)
+                    </option>
+                  ))}
+                </select>
+                <Link
+                  href="/caregiver/patients"
+                  className="font-clash-semibold"
+                  style={{
+                    fontSize: '0.78rem',
+                    color: '#214935',
+                    textDecoration: 'underline',
+                    marginLeft: '0.2rem',
+                  }}
+                >
+                  Manage All
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Action Pills */}
@@ -862,13 +971,16 @@ export default function CaregiverDashboardPage() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {sessions.slice(0, 6).map((s) => {
-                const dateStr = new Date(s.timestamp).toLocaleDateString('en-IN', {
-                  month: 'short',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                });
+              {sessions.slice(0, 10).map((s) => {
+                const dateVal = s.timestamp ? new Date(Number(s.timestamp)) : new Date();
+                const dateStr = !isNaN(dateVal.getTime())
+                  ? dateVal.toLocaleDateString('en-IN', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })
+                  : 'Recent session';
 
                 const getGameIcon = () => {
                   if (s.gameId.includes('decision')) return <Zap size={18} />;
