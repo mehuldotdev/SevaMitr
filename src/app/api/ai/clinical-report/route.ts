@@ -22,26 +22,24 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
-      patient = {
-        fullName: 'Mridula Hazarika',
-        age: 72,
-        gender: 'Female',
-        region: 'Tezpur, Assam',
-        dementiaStage: 'Mild',
-      } as PatientContext,
+      patient,
       telemetry = {} as TelemetryData,
       language = 'en',
     } = body;
 
-    const sightSpeedMs = telemetry.sightSpeedMs || 220;
-    const soundSweepsMs = telemetry.soundSweepsMs || 95;
-    const targetTrackerScore = telemetry.targetTrackerScore || 82;
-    const hesitationMs = telemetry.hesitationMs || 1450;
-    const sessionsCount = telemetry.sessionsCount || 3;
-    const sundowningPct = telemetry.sundowningDivergencePct || 14;
+    if (!patient || !patient.fullName) {
+      return NextResponse.json({ success: false, error: 'Patient profile required' }, { status: 400 });
+    }
+
+    const hasData =
+      (telemetry.sessionsCount !== undefined && telemetry.sessionsCount > 0) ||
+      telemetry.sightSpeedMs !== undefined ||
+      telemetry.soundSweepsMs !== undefined ||
+      telemetry.targetTrackerScore !== undefined ||
+      telemetry.hesitationMs !== undefined;
 
     // Check in-memory server cache first
-    const cacheKey = `${patient.fullName}-${patient.age}-${sightSpeedMs}-${soundSweepsMs}-${targetTrackerScore}-${hesitationMs}-${language}`;
+    const cacheKey = `${patient.fullName}-${patient.age}-${telemetry.sightSpeedMs ?? 'none'}-${telemetry.soundSweepsMs ?? 'none'}-${telemetry.targetTrackerScore ?? 'none'}-${telemetry.hesitationMs ?? 'none'}-${telemetry.sessionsCount ?? 0}-${language}`;
     const cached = reportCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
       return NextResponse.json({
@@ -56,34 +54,38 @@ export async function POST(req: NextRequest) {
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (apiKey) {
-      // Doctor-Centric High-Yield Clinical Prompt (Zero Fluff, Maximum Diagnostic Density)
-      const systemPrompt = `You are a Senior Consulting Neuropsychologist for SevaMitr OPD clinic.
-Patient: ${patient.fullName}, ${patient.age}y ${patient.gender || 'F'}, ${patient.region || 'Assam'}. Stage: ${patient.dementiaStage || 'Mild'}.
-Telemetry: Visual UFOV ${sightSpeedMs}ms (Normal <200), Auditory ${soundSweepsMs}ms (Normal <100), Tracking ${targetTrackerScore}% (Normal >80), Motor Hesitation ${hesitationMs}ms (Normal <1200), Sundowning +${sundowningPct}%.
+      const telemetrySummary = hasData
+        ? `Telemetry: Visual UFOV ${telemetry.sightSpeedMs !== undefined ? `${telemetry.sightSpeedMs}ms (Normal <200)` : 'Not Tested'}, Auditory ${telemetry.soundSweepsMs !== undefined ? `${telemetry.soundSweepsMs}ms (Normal <100)` : 'Not Tested'}, Tracking ${telemetry.targetTrackerScore !== undefined ? `${telemetry.targetTrackerScore}% (Normal >80)` : 'Not Tested'}, Motor Hesitation ${telemetry.hesitationMs !== undefined ? `${telemetry.hesitationMs}ms (Normal <1200)` : 'Not Tested'}, Sundowning Divergence: ${telemetry.sundowningDivergencePct !== undefined ? `+${telemetry.sundowningDivergencePct}%` : 'Insufficient diurnal data'}, Total Sessions: ${telemetry.sessionsCount || 1}.`
+        : `Telemetry: Zero assessment sessions completed yet. Baseline screening is pending on the Patient Kiosk.`;
 
-Provide ONLY high-yield OPD clinical details in strict JSON matching schema:
+      const systemPrompt = `You are a Senior Consulting Neuropsychologist for SevaMitr OPD clinic.
+Patient: ${patient.fullName}, ${patient.age}y ${patient.gender || 'Patient'}, ${patient.region || 'Assam'}. Stage: ${patient.dementiaStage || 'MCI'}.
+${telemetrySummary}
+
+Provide high-yield OPD clinical details in strict JSON matching schema:
 {
-  "triageStatus": "LOW_RISK" | "BORDERLINE_MCI" | "HIGH_IMPAIRMENT",
+  "triageStatus": "${hasData ? 'LOW_RISK | BORDERLINE_MCI | HIGH_IMPAIRMENT' : 'PENDING'}",
   "triageLabel": "Concise 3-4 word clinical status",
-  "dciScore": number (0-100),
+  "dciScore": number (${hasData ? '0-100' : '0'}),
+  "hasRecordedData": ${hasData},
   "sbar": {
-    "situation": "1 punchy line: screening trigger & baseline index",
+    "situation": "1 punchy line: screening trigger & baseline index for ${patient.fullName}",
     "background": "1 punchy line: patient demographics & language (${language})",
-    "assessment": "1-2 lines on anatomical localization: occipitoparietal visual vs temporal auditory vs parietal dorsal stream vs frontostriatal motor latency",
+    "assessment": "1-2 lines on clinical/anatomical localization: ${hasData ? 'occipitoparietal visual vs temporal auditory vs parietal dorsal stream vs frontostriatal motor latency' : 'mention that baseline game sessions are pending on the Kiosk'}",
     "recommendation": "2-3 concise bulleted clinical next steps (MoCA subtests, medication check, ambient lighting)"
   },
   "domainBreakdown": {
-    "visualSpeed": { "latencyMs": ${sightSpeedMs}, "status": "Normal | Mild Delay | Significant Deficit", "interpretation": "1 concise clinical note" },
-    "auditoryDiscrimination": { "latencyMs": ${soundSweepsMs}, "status": "Normal | Mild Delay | Significant Deficit", "interpretation": "1 concise clinical note" },
-    "dividedAttention": { "accuracyPct": ${targetTrackerScore}, "status": "Preserved | Mild Bottleneck | Impaired", "interpretation": "1 concise clinical note" },
-    "motorHesitation": { "latencyMs": ${hesitationMs}, "status": "Fluid | Moderate Hesitation | High Hesitation", "interpretation": "1 concise clinical note" }
+    "visualSpeed": { "latencyMs": ${telemetry.sightSpeedMs || 0}, "status": "${telemetry.sightSpeedMs ? 'Normal | Mild Delay | Significant Deficit' : 'Not Tested'}", "interpretation": "1 concise clinical note" },
+    "auditoryDiscrimination": { "latencyMs": ${telemetry.soundSweepsMs || 0}, "status": "${telemetry.soundSweepsMs ? 'Normal | Mild Delay | Significant Deficit' : 'Not Tested'}", "interpretation": "1 concise clinical note" },
+    "dividedAttention": { "accuracyPct": ${telemetry.targetTrackerScore || 0}, "status": "${telemetry.targetTrackerScore ? 'Preserved | Mild Bottleneck | Impaired' : 'Not Tested'}", "interpretation": "1 concise clinical note" },
+    "motorHesitation": { "latencyMs": ${telemetry.hesitationMs || 0}, "status": "${telemetry.hesitationMs ? 'Fluid | Moderate Hesitation | High Hesitation' : 'Not Tested'}", "interpretation": "1 concise clinical note" }
   },
   "doctorDiscussionPrompts": [
-    "Targeted OPD clinical question 1 to ask family in clinic",
-    "Targeted OPD clinical question 2 to ask family in clinic",
-    "Targeted OPD clinical question 3 to ask family in clinic"
+    "Targeted OPD clinical question 1 to ask family of ${patient.fullName} in clinic",
+    "Targeted OPD clinical question 2 to ask family of ${patient.fullName} in clinic",
+    "Targeted OPD clinical question 3 to ask family of ${patient.fullName} in clinic"
   ],
-  "caregiverHomeSlip": "Warm 2-line family note in language '${language}'."
+  "caregiverHomeSlip": "Warm 2-line family note mentioning '${patient.fullName}' in language '${language}'."
 }`;
 
       const primaryModel = 'gemini-3.1-flash-lite';

@@ -17,11 +17,71 @@ import {
   CheckCircle2,
   HelpCircle,
 } from 'lucide-react';
-import { PatientProfile } from '@/lib/db/offlineDb';
+import { PatientProfile, offlineDb } from '@/lib/db/offlineDb';
 import {
   computeDeterministicReport,
   DoctorReportData,
+  TelemetryData,
 } from '@/lib/clinical/neuroTriageEngine';
+
+export function extractPatientTelemetry(patientId?: string): TelemetryData {
+  if (typeof window === 'undefined' || !patientId) {
+    return { sessionsCount: 0 };
+  }
+  const sessions = offlineDb.getSessions(patientId);
+  if (!sessions || sessions.length === 0) {
+    return { sessionsCount: 0 };
+  }
+
+  const doubleDecisionSessions = sessions.filter((s) => s.gameId === 'double_decision');
+  const soundSweepsSessions = sessions.filter((s) => s.gameId === 'sound_sweeps');
+  const targetTrackerSessions = sessions.filter((s) => s.gameId === 'target_tracker');
+  const speedMazeSessions = sessions.filter((s) => s.gameId === 'speed_maze');
+  const bijuliTapSessions = sessions.filter((s) => s.gameId === 'bijuli_tap');
+  const bikhamaSessions = sessions.filter((s) => s.gameId === 'bikhama_khoj');
+
+  const visualPool = [...doubleDecisionSessions, ...bikhamaSessions];
+  const sightSpeedMs =
+    visualPool.length > 0
+      ? Math.round(visualPool.reduce((acc, s) => acc + s.hesitationMs, 0) / visualPool.length)
+      : undefined;
+
+  const soundSweepsMs =
+    soundSweepsSessions.length > 0
+      ? Math.round(soundSweepsSessions.reduce((acc, s) => acc + s.hesitationMs, 0) / soundSweepsSessions.length)
+      : undefined;
+
+  const targetTrackerScore =
+    targetTrackerSessions.length > 0
+      ? Math.round(targetTrackerSessions.reduce((acc, s) => acc + s.score, 0) / targetTrackerSessions.length)
+      : undefined;
+
+  const motorPool = [...bijuliTapSessions, ...speedMazeSessions];
+  const hesitationMs =
+    motorPool.length > 0
+      ? Math.round(motorPool.reduce((acc, s) => acc + s.hesitationMs, 0) / motorPool.length)
+      : sessions.length > 0
+      ? Math.round(sessions.reduce((acc, s) => acc + s.hesitationMs, 0) / sessions.length)
+      : undefined;
+
+  const morning = sessions.filter((s) => s.timeOfDay === 'morning');
+  const evening = sessions.filter((s) => s.timeOfDay === 'evening' || s.timeOfDay === 'night');
+  let sundowningDivergencePct: number | undefined = undefined;
+  if (morning.length > 0 && evening.length > 0) {
+    const avgMorning = morning.reduce((a, b) => a + b.hesitationMs, 0) / morning.length;
+    const avgEvening = evening.reduce((a, b) => a + b.hesitationMs, 0) / evening.length;
+    sundowningDivergencePct = Math.round(((avgEvening - avgMorning) / Math.max(1, avgMorning)) * 100);
+  }
+
+  return {
+    sightSpeedMs,
+    soundSweepsMs,
+    targetTrackerScore,
+    hesitationMs,
+    sessionsCount: sessions.length,
+    sundowningDivergencePct,
+  };
+}
 
 // Module-level cache so reopening the modal for the same patient in session is 0ms
 const clientReportCache = new Map<string, DoctorReportData>();
@@ -30,32 +90,38 @@ interface DoctorReportModalProps {
   isOpen: boolean;
   onClose: () => void;
   patient: PatientProfile;
-  telemetry?: {
-    sightSpeedMs?: number;
-    soundSweepsMs?: number;
-    targetTrackerScore?: number;
-    hesitationMs?: number;
-    sessionsCount?: number;
-    sundowningDivergencePct?: number;
-  };
+  telemetry?: TelemetryData;
 }
 
 export function DoctorReportModal({
   isOpen,
   onClose,
   patient,
-  telemetry = {},
+  telemetry,
 }: DoctorReportModalProps) {
+  const effectiveTelemetry = React.useMemo(() => {
+    const hasProps =
+      telemetry &&
+      (telemetry.sightSpeedMs !== undefined ||
+       telemetry.soundSweepsMs !== undefined ||
+       telemetry.targetTrackerScore !== undefined ||
+       telemetry.hesitationMs !== undefined ||
+       (telemetry.sessionsCount !== undefined && telemetry.sessionsCount > 0));
+
+    if (hasProps) return telemetry;
+    return extractPatientTelemetry(patient?.id);
+  }, [telemetry, patient?.id]);
+
   const [reportData, setReportData] = useState<DoctorReportData>(() =>
-    computeDeterministicReport(patient, telemetry, patient.primaryLanguage || 'en', true)
+    computeDeterministicReport(patient, effectiveTelemetry, patient.primaryLanguage || 'en', true)
   );
   const [isAiRefining, setIsAiRefining] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !patient) return;
 
-    const cacheKey = `${patient.fullName}-${patient.age}-${telemetry.sightSpeedMs || 220}-${telemetry.soundSweepsMs || 95}-${telemetry.targetTrackerScore || 82}-${telemetry.hesitationMs || 1450}-${patient.primaryLanguage || 'en'}`;
+    const cacheKey = `${patient.fullName}-${patient.age}-${effectiveTelemetry.sightSpeedMs ?? 'none'}-${effectiveTelemetry.soundSweepsMs ?? 'none'}-${effectiveTelemetry.targetTrackerScore ?? 'none'}-${effectiveTelemetry.hesitationMs ?? 'none'}-${effectiveTelemetry.sessionsCount ?? 0}-${patient.primaryLanguage || 'en'}`;
 
     const cached = clientReportCache.get(cacheKey);
     if (cached) {
@@ -67,7 +133,7 @@ export function DoctorReportModal({
     // Instant Zero-Wait Render: deterministic psychophysics triage ready in 0ms
     const instantReport = computeDeterministicReport(
       patient,
-      telemetry,
+      effectiveTelemetry,
       patient.primaryLanguage || 'en',
       true
     );
@@ -82,14 +148,7 @@ export function DoctorReportModal({
       signal: controller.signal,
       body: JSON.stringify({
         patient,
-        telemetry: {
-          sightSpeedMs: telemetry.sightSpeedMs || 220,
-          soundSweepsMs: telemetry.soundSweepsMs || 95,
-          targetTrackerScore: telemetry.targetTrackerScore || 82,
-          hesitationMs: telemetry.hesitationMs || 1450,
-          sessionsCount: telemetry.sessionsCount || 3,
-          sundowningDivergencePct: telemetry.sundowningDivergencePct || 14,
-        },
+        telemetry: effectiveTelemetry,
         language: patient.primaryLanguage || 'en',
       }),
     })
@@ -112,7 +171,7 @@ export function DoctorReportModal({
     return () => {
       controller.abort();
     };
-  }, [isOpen, patient, telemetry]);
+  }, [isOpen, patient, effectiveTelemetry]);
 
   if (!isOpen) return null;
 
@@ -153,6 +212,8 @@ DOCTOR CONSULTATION QUESTIONS:
         return { bg: '#fee2e2', border: '#991b1b', text: '#991b1b', label: '🔴 High Neuro-Attentional Deficit' };
       case 'BORDERLINE_MCI':
         return { bg: '#fef3c7', border: '#b45309', text: '#92400e', label: '🟡 Borderline MCI Flag' };
+      case 'PENDING':
+        return { bg: '#f4f7f4', border: '#78716c', text: '#57534e', label: '⚪ Baseline Screening Pending' };
       default:
         return { bg: '#e8f5e9', border: '#214935', text: '#073220', label: '🟢 Stable Age-Matched Baseline' };
     }
@@ -387,7 +448,13 @@ DOCTOR CONSULTATION QUESTIONS:
             <div style={{ textAlign: 'right' }}>
               <div className="font-clash-wide" style={{ fontSize: '0.68rem', color: '#57534e' }}>DYNAMIC COGNITIVE INDEX</div>
               <div className="font-clash-bold" style={{ fontSize: '2rem', color: '#214935', lineHeight: 1 }}>
-                {reportData.dciScore} <span style={{ fontSize: '1rem', color: '#78716c' }}>/ 100</span>
+                {reportData.hasRecordedData === false || reportData.dciScore === 0 ? (
+                  <span style={{ fontSize: '1.4rem', color: '#78716c' }}>Pending</span>
+                ) : (
+                  <>
+                    {reportData.dciScore} <span style={{ fontSize: '1rem', color: '#78716c' }}>/ 100</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -400,10 +467,12 @@ DOCTOR CONSULTATION QUESTIONS:
                 <span className="font-clash-wide" style={{ fontSize: '0.66rem' }}>SIGHT SPEED (UFOV)</span>
               </div>
               <div className="font-clash-bold" style={{ fontSize: '1.25rem', color: '#1c1b1b', lineHeight: 1 }}>
-                {reportData.domainBreakdown?.visualSpeed?.latencyMs || telemetry.sightSpeedMs || 220} ms
+                {reportData.domainBreakdown?.visualSpeed?.status === 'Not Tested' || !reportData.domainBreakdown?.visualSpeed?.latencyMs
+                  ? 'Pending'
+                  : `${reportData.domainBreakdown.visualSpeed.latencyMs} ms`}
               </div>
               <div className="font-clash-regular" style={{ fontSize: '0.72rem', color: '#57534e', marginTop: '0.25rem' }}>
-                {reportData.domainBreakdown?.visualSpeed?.status || 'Normal'}
+                {reportData.domainBreakdown?.visualSpeed?.status || 'Not Tested'}
               </div>
             </div>
 
@@ -413,10 +482,12 @@ DOCTOR CONSULTATION QUESTIONS:
                 <span className="font-clash-wide" style={{ fontSize: '0.66rem' }}>ACOUSTIC SWEEPS</span>
               </div>
               <div className="font-clash-bold" style={{ fontSize: '1.25rem', color: '#1c1b1b', lineHeight: 1 }}>
-                {reportData.domainBreakdown?.auditoryDiscrimination?.latencyMs || telemetry.soundSweepsMs || 95} ms
+                {reportData.domainBreakdown?.auditoryDiscrimination?.status === 'Not Tested' || !reportData.domainBreakdown?.auditoryDiscrimination?.latencyMs
+                  ? 'Pending'
+                  : `${reportData.domainBreakdown.auditoryDiscrimination.latencyMs} ms`}
               </div>
               <div className="font-clash-regular" style={{ fontSize: '0.72rem', color: '#57534e', marginTop: '0.25rem' }}>
-                {reportData.domainBreakdown?.auditoryDiscrimination?.status || 'Normal'}
+                {reportData.domainBreakdown?.auditoryDiscrimination?.status || 'Not Tested'}
               </div>
             </div>
 
@@ -426,10 +497,12 @@ DOCTOR CONSULTATION QUESTIONS:
                 <span className="font-clash-wide" style={{ fontSize: '0.66rem' }}>DIVIDED ATTENTION</span>
               </div>
               <div className="font-clash-bold" style={{ fontSize: '1.25rem', color: '#1c1b1b', lineHeight: 1 }}>
-                {reportData.domainBreakdown?.dividedAttention?.accuracyPct || telemetry.targetTrackerScore || 82}%
+                {reportData.domainBreakdown?.dividedAttention?.status === 'Not Tested' || reportData.domainBreakdown?.dividedAttention?.accuracyPct === undefined || reportData.domainBreakdown?.dividedAttention?.accuracyPct === 0
+                  ? 'Pending'
+                  : `${reportData.domainBreakdown.dividedAttention.accuracyPct}%`}
               </div>
               <div className="font-clash-regular" style={{ fontSize: '0.72rem', color: '#57534e', marginTop: '0.25rem' }}>
-                {reportData.domainBreakdown?.dividedAttention?.status || 'Preserved'}
+                {reportData.domainBreakdown?.dividedAttention?.status || 'Not Tested'}
               </div>
             </div>
 
@@ -439,10 +512,12 @@ DOCTOR CONSULTATION QUESTIONS:
                 <span className="font-clash-wide" style={{ fontSize: '0.66rem' }}>MOTOR LATENCY</span>
               </div>
               <div className="font-clash-bold" style={{ fontSize: '1.25rem', color: '#1c1b1b', lineHeight: 1 }}>
-                {reportData.domainBreakdown?.motorHesitation?.latencyMs || telemetry.hesitationMs || 1450} ms
+                {reportData.domainBreakdown?.motorHesitation?.status === 'Not Tested' || !reportData.domainBreakdown?.motorHesitation?.latencyMs
+                  ? 'Pending'
+                  : `${reportData.domainBreakdown.motorHesitation.latencyMs} ms`}
               </div>
               <div className="font-clash-regular" style={{ fontSize: '0.72rem', color: '#57534e', marginTop: '0.25rem' }}>
-                {reportData.domainBreakdown?.motorHesitation?.status || 'Moderate Hesitation'}
+                {reportData.domainBreakdown?.motorHesitation?.status || 'Not Tested'}
               </div>
             </div>
           </div>

@@ -150,12 +150,12 @@ export default function CaregiverDashboardPage() {
         body: JSON.stringify({
           patient,
           telemetry: {
-            sightSpeedMs: bestVisualSpeed ?? 220,
-            soundSweepsMs: bestAuditoryIsi ?? 95,
-            targetTrackerScore: targetAccuracy ?? 80,
-            hesitationMs: sessions.length > 0 ? Math.round(sessions.reduce((acc, s) => acc + s.hesitationMs, 0) / sessions.length) : 1400,
+            sightSpeedMs: bestVisualSpeed ?? undefined,
+            soundSweepsMs: bestAuditoryIsi ?? undefined,
+            targetTrackerScore: targetAccuracy ?? undefined,
+            hesitationMs: sessions.length > 0 ? Math.round(sessions.reduce((acc, s) => acc + s.hesitationMs, 0) / sessions.length) : undefined,
             sessionsCount: sessions.length,
-            sundowningDivergencePct: analysis.sundowning.latencyDivergencePct,
+            sundowningDivergencePct: analysis.sundowning.hasEnoughData ? analysis.sundowning.latencyDivergencePct : undefined,
           },
           language: patient.primaryLanguage || 'en',
         }),
@@ -898,12 +898,12 @@ export default function CaregiverDashboardPage() {
           onClose={() => setShowDoctorReport(false)}
           patient={patient}
           telemetry={{
-            sightSpeedMs: bestVisualSpeed ?? 220,
-            soundSweepsMs: bestAuditoryIsi ?? 95,
-            targetTrackerScore: targetAccuracy ?? 80,
-            hesitationMs: sessions.length > 0 ? Math.round(sessions.reduce((acc, s) => acc + s.hesitationMs, 0) / sessions.length) : 1400,
+            sightSpeedMs: bestVisualSpeed ?? undefined,
+            soundSweepsMs: bestAuditoryIsi ?? undefined,
+            targetTrackerScore: targetAccuracy ?? undefined,
+            hesitationMs: sessions.length > 0 ? Math.round(sessions.reduce((acc, s) => acc + s.hesitationMs, 0) / sessions.length) : undefined,
             sessionsCount: sessions.length,
-            sundowningDivergencePct: analysis.sundowning.latencyDivergencePct,
+            sundowningDivergencePct: analysis.sundowning.hasEnoughData ? analysis.sundowning.latencyDivergencePct : undefined,
           }}
         />
       )}

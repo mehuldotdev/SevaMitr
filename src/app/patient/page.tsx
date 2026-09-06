@@ -1339,11 +1339,13 @@ export default function PatientHomePage() {
       </nav>
 
       {/* Clinical Handover Report Modal */}
-      <DoctorReportModal
-        isOpen={showDoctorModal}
-        onClose={() => setShowDoctorModal(false)}
-        patient={patient}
-      />
+      {patient && (
+        <DoctorReportModal
+          isOpen={showDoctorModal}
+          onClose={() => setShowDoctorModal(false)}
+          patient={patient}
+        />
+      )}
     </div>
   );
 }
