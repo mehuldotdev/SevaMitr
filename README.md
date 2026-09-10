@@ -217,4 +217,11 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 
 ## 📄 License
 
-All rights reserved by the repository owners. Developed for rural elderly healthcare in the North Eastern Region of India.
+**NOT FOR USE — Proprietary & Confidential**
+
+Copyright © 2026 Kunal Saini. All rights reserved.
+
+This repository, its source code, assets, and associated documentation are proprietary and confidential. No license, right, or permission is granted to use, run, copy, modify, merge, distribute, publish, sublicense, or sell copies of this software, in whole or in part, for any commercial or non-commercial purpose.
+
+For complete terms and conditions, see the [LICENSE](LICENSE) file.
+
